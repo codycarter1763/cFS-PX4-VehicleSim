@@ -1,0 +1,211 @@
+/************************************************************************
+ * NASA Docket No. GSC-18,447-1, and identified as “CFS CFDP (CF)
+ * Application version 3.0.0”
+ *
+ * Copyright (c) 2019 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ************************************************************************/
+
+/**
+ * @file
+ *  The CF Application main application source file
+ *
+ *  This file contains the functions that initialize the application and link
+ *  all logic and functionality to the CFS.
+ */
+
+#include "cf_dispatch.h"
+#include "cf_app.h"
+#include "cf_eventids.h"
+#include "cf_cmd.h"
+#include "cf_cmd_compat.h"
+
+#include "cfe.h"
+#include <string.h>
+
+/*----------------------------------------------------------------
+ *
+ * Application-scope internal function
+ * See description in cf_cmd.h for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
+void CF_ProcessGroundCommand(const CFE_SB_Buffer_t *BufPtr)
+{
+    typedef void (*const handler_fn_t)(const void *);
+
+    static handler_fn_t fns[] = {
+        [CF_NOOP_CC]                       = (handler_fn_t)CF_NoopCmd,
+        [CF_RESET_COMPAT_CC]               = (handler_fn_t)CF_ResetCountersCompatCmd,
+        [CF_TX_FILE_COMPAT_CC]             = (handler_fn_t)CF_TxFileCompatCmd,
+        [CF_PLAYBACK_DIR_COMPAT_CC]        = (handler_fn_t)CF_PlaybackDirCompatCmd,
+        [CF_FREEZE_COMPAT_CC]              = (handler_fn_t)CF_FreezeCompatCmd,
+        [CF_THAW_COMPAT_CC]                = (handler_fn_t)CF_ThawCompatCmd,
+        [CF_SUSPEND_COMPAT_CC]             = (handler_fn_t)CF_SuspendCompatCmd,
+        [CF_RESUME_COMPAT_CC]              = (handler_fn_t)CF_ResumeCompatCmd,
+        [CF_CANCEL_COMPAT_CC]              = (handler_fn_t)CF_CancelCompatCmd,
+        [CF_ABANDON_COMPAT_CC]             = (handler_fn_t)CF_AbandonCompatCmd,
+        [CF_SET_PARAM_COMPAT_CC]           = (handler_fn_t)CF_SetParamCompatCmd,
+        [CF_GET_PARAM_COMPAT_CC]           = (handler_fn_t)CF_GetParamCompatCmd,
+        [CF_WRITE_QUEUE_COMPAT_CC]         = (handler_fn_t)CF_WriteQueueCompatCmd,
+        [CF_ENABLE_DEQUEUE_COMPAT_CC]      = (handler_fn_t)CF_EnableDequeueCompatCmd,
+        [CF_DISABLE_DEQUEUE_COMPAT_CC]     = (handler_fn_t)CF_DisableDequeueCompatCmd,
+        [CF_ENABLE_DIR_POLLING_COMPAT_CC]  = (handler_fn_t)CF_EnableDirPollingCompatCmd,
+        [CF_DISABLE_DIR_POLLING_COMPAT_CC] = (handler_fn_t)CF_DisableDirPollingCompatCmd,
+        [CF_PURGE_QUEUE_COMPAT_CC]         = (handler_fn_t)CF_PurgeQueueCompatCmd,
+        [CF_ENABLE_ENGINE_CC]              = (handler_fn_t)CF_EnableEngineCmd,
+        [CF_DISABLE_ENGINE_CC]             = (handler_fn_t)CF_DisableEngineCmd,
+        [CF_RESET_CC]                      = (handler_fn_t)CF_ResetCountersCmd,
+        [CF_TX_FILE_CC]                    = (handler_fn_t)CF_TxFileCmd,
+        [CF_PLAYBACK_DIR_CC]               = (handler_fn_t)CF_PlaybackDirCmd,
+        [CF_FREEZE_CC]                     = (handler_fn_t)CF_FreezeCmd,
+        [CF_THAW_CC]                       = (handler_fn_t)CF_ThawCmd,
+        [CF_SUSPEND_CC]                    = (handler_fn_t)CF_SuspendCmd,
+        [CF_RESUME_CC]                     = (handler_fn_t)CF_ResumeCmd,
+        [CF_CANCEL_CC]                     = (handler_fn_t)CF_CancelCmd,
+        [CF_ABANDON_CC]                    = (handler_fn_t)CF_AbandonCmd,
+        [CF_SET_PARAM_CC]                  = (handler_fn_t)CF_SetParamCmd,
+        [CF_GET_PARAM_CC]                  = (handler_fn_t)CF_GetParamCmd,
+        [CF_WRITE_QUEUE_CC]                = (handler_fn_t)CF_WriteQueueCmd,
+        [CF_ENABLE_DEQUEUE_CC]             = (handler_fn_t)CF_EnableDequeueCmd,
+        [CF_DISABLE_DEQUEUE_CC]            = (handler_fn_t)CF_DisableDequeueCmd,
+        [CF_ENABLE_DIR_POLLING_CC]         = (handler_fn_t)CF_EnableDirPollingCmd,
+        [CF_DISABLE_DIR_POLLING_CC]        = (handler_fn_t)CF_DisableDirPollingCmd,
+        [CF_PURGE_QUEUE_CC]                = (handler_fn_t)CF_PurgeQueueCmd,
+    };
+
+    static const uint16 expected_lengths[] = {
+        [CF_NOOP_CC]                       = sizeof(CF_NoopCmd_t),
+        [CF_RESET_COMPAT_CC]               = sizeof(CF_ResetCountersCompatCmd_t),
+        [CF_TX_FILE_COMPAT_CC]             = sizeof(CF_TxFileCompatCmd_t),
+        [CF_PLAYBACK_DIR_COMPAT_CC]        = sizeof(CF_PlaybackDirCompatCmd_t),
+        [CF_FREEZE_COMPAT_CC]              = sizeof(CF_FreezeCompatCmd_t),
+        [CF_THAW_COMPAT_CC]                = sizeof(CF_ThawCompatCmd_t),
+        [CF_SUSPEND_COMPAT_CC]             = sizeof(CF_SuspendCompatCmd_t),
+        [CF_RESUME_COMPAT_CC]              = sizeof(CF_ResumeCompatCmd_t),
+        [CF_CANCEL_COMPAT_CC]              = sizeof(CF_CancelCompatCmd_t),
+        [CF_ABANDON_COMPAT_CC]             = sizeof(CF_AbandonCompatCmd_t),
+        [CF_SET_PARAM_COMPAT_CC]           = sizeof(CF_SetParamCompatCmd_t),
+        [CF_GET_PARAM_COMPAT_CC]           = sizeof(CF_GetParamCompatCmd_t),
+        [CF_WRITE_QUEUE_COMPAT_CC]         = sizeof(CF_WriteQueueCompatCmd_t),
+        [CF_ENABLE_DEQUEUE_COMPAT_CC]      = sizeof(CF_EnableDequeueCompatCmd_t),
+        [CF_DISABLE_DEQUEUE_COMPAT_CC]     = sizeof(CF_DisableDequeueCompatCmd_t),
+        [CF_ENABLE_DIR_POLLING_COMPAT_CC]  = sizeof(CF_EnableDirPollingCompatCmd_t),
+        [CF_DISABLE_DIR_POLLING_COMPAT_CC] = sizeof(CF_DisableDirPollingCompatCmd_t),
+        [CF_PURGE_QUEUE_COMPAT_CC]         = sizeof(CF_PurgeQueueCompatCmd_t),
+        [CF_ENABLE_ENGINE_CC]              = sizeof(CF_EnableEngineCmd_t),
+        [CF_DISABLE_ENGINE_CC]             = sizeof(CF_DisableEngineCmd_t),
+        [CF_RESET_CC]                      = sizeof(CF_ResetCountersCmd_t),
+        [CF_TX_FILE_CC]                    = sizeof(CF_TxFileCmd_t),
+        [CF_PLAYBACK_DIR_CC]               = sizeof(CF_PlaybackDirCmd_t),
+        [CF_FREEZE_CC]                     = sizeof(CF_FreezeCmd_t),
+        [CF_THAW_CC]                       = sizeof(CF_ThawCmd_t),
+        [CF_SUSPEND_CC]                    = sizeof(CF_SuspendCmd_t),
+        [CF_RESUME_CC]                     = sizeof(CF_ResumeCmd_t),
+        [CF_CANCEL_CC]                     = sizeof(CF_CancelCmd_t),
+        [CF_ABANDON_CC]                    = sizeof(CF_AbandonCmd_t),
+        [CF_SET_PARAM_CC]                  = sizeof(CF_SetParamCmd_t),
+        [CF_GET_PARAM_CC]                  = sizeof(CF_GetParamCmd_t),
+        [CF_WRITE_QUEUE_CC]                = sizeof(CF_WriteQueueCmd_t),
+        [CF_ENABLE_DEQUEUE_CC]             = sizeof(CF_EnableDequeueCmd_t),
+        [CF_DISABLE_DEQUEUE_CC]            = sizeof(CF_DisableDequeueCmd_t),
+        [CF_ENABLE_DIR_POLLING_CC]         = sizeof(CF_EnableDirPollingCmd_t),
+        [CF_DISABLE_DIR_POLLING_CC]        = sizeof(CF_DisableDirPollingCmd_t),
+        [CF_PURGE_QUEUE_CC]                = sizeof(CF_PurgeQueueCmd_t),
+    };
+
+    CFE_MSG_FcnCode_t cmd = 0;
+    size_t            len = 0;
+
+    CFE_MSG_GetFcnCode(&BufPtr->Msg, &cmd);
+
+    if (cmd < (sizeof(expected_lengths) / sizeof(expected_lengths[0])) && fns[cmd] != NULL)
+    {
+        CFE_MSG_GetSize(&BufPtr->Msg, &len);
+
+        /* first, verify command length */
+        if (len == expected_lengths[cmd])
+        {
+            /* if valid, process command */
+            fns[cmd](BufPtr);
+        }
+        else
+        {
+            CFE_EVS_SendEvent(CF_CMD_LEN_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
+                              "CF: invalid ground command length for command 0x%02x, expected %d got %zd",
+                              cmd,
+                              expected_lengths[cmd],
+                              len);
+            ++CF_AppData.counters.err;
+        }
+    }
+    else
+    {
+        CFE_EVS_SendEvent(CF_CC_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "CF: invalid ground command packet cmd_code=0x%02x",
+                          cmd);
+        ++CF_AppData.counters.err;
+    }
+}
+
+/*----------------------------------------------------------------
+ *
+ * Application-scope internal function
+ * See description in cf_app.h for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
+void CF_AppPipe(const CFE_SB_Buffer_t *BufPtr)
+{
+    static CFE_SB_MsgId_t CMD_MID     = CFE_SB_MSGID_RESERVED;
+    static CFE_SB_MsgId_t SEND_HK_MID = CFE_SB_MSGID_RESERVED;
+    static CFE_SB_MsgId_t WAKE_UP_MID = CFE_SB_MSGID_RESERVED;
+
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
+
+    /* cache the local MID Values here, this avoids repeat lookups */
+    if (!CFE_SB_IsValidMsgId(CMD_MID))
+    {
+        CMD_MID     = CFE_SB_ValueToMsgId(CF_CMD_MID);
+        SEND_HK_MID = CFE_SB_ValueToMsgId(CF_SEND_HK_MID);
+        WAKE_UP_MID = CFE_SB_ValueToMsgId(CF_WAKE_UP_MID);
+    }
+
+    CFE_MSG_GetMsgId(&BufPtr->Msg, &MsgId);
+
+    /* Process all SB messages */
+    if (CFE_SB_MsgId_Equal(MsgId, WAKE_UP_MID))
+    {
+        /* Periodic Wakeup */
+        CF_WakeupCmd((const CF_WakeupCmd_t *)BufPtr);
+    }
+    else if (CFE_SB_MsgId_Equal(MsgId, SEND_HK_MID))
+    {
+        /* Housekeeping request */
+        CF_SendHkCmd((const CF_SendHkCmd_t *)BufPtr);
+    }
+    else if (CFE_SB_MsgId_Equal(MsgId, CMD_MID))
+    {
+        /* Ground command */
+        CF_ProcessGroundCommand(BufPtr);
+    }
+    else
+    {
+        ++CF_AppData.counters.err;
+        CFE_EVS_SendEvent(CF_MID_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "CF: invalid command packet id=0x%lx",
+                          (unsigned long)CFE_SB_MsgIdToValue(MsgId));
+    }
+}

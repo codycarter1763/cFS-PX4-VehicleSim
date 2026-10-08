@@ -1,0 +1,131 @@
+/************************************************************************
+ * NASA Docket No. GSC-18,447-1, and identified as “CFS CFDP (CF)
+ * Application version 3.0.0”
+ *
+ * Copyright (c) 2019 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ************************************************************************/
+
+/**
+ * @file
+ *
+ * Declarations and prototypes for cf_extern_typedefs module
+ */
+
+#ifndef DEFAULT_CF_EXTERN_TYPEDEFS_H
+#define DEFAULT_CF_EXTERN_TYPEDEFS_H
+
+/* constants such as CF_FILENAME_MAX_LEN are in mission_cfg.h */
+#include "cf_mission_cfg.h"
+
+/**
+ * @brief Values for CFDP file transfer class
+ *
+ * The CFDP specification prescribes two classes/modes of file
+ * transfer protocol operation - unacknowledged/simple or
+ * acknowledged/reliable.
+ *
+ * Defined per section 7.1 of CCSDS 727.0-B-5
+ */
+enum CF_CFDP_Class
+{
+    CF_CFDP_Class_1 = 0, /**< \brief CFDP class 1 - Unreliable transfer */
+    CF_CFDP_Class_2 = 1, /**< \brief CFDP class 2 - Reliable transfer */
+};
+
+/**
+ * @brief External type to use for CFDP class
+ *
+ * This uses the labels defined in enum CF_CFDP_Class
+ * but maps to a fixed-width type for use in CMD/TLM/Tables
+ */
+typedef uint8 CF_CFDP_Class_Enum_t;
+
+/**
+ * @brief A simple boolean for enable/disable switches
+ *
+ * This is fixed as an 8-bit unsigned value in commands
+ * and telemetry where 0=false/off and 1=true/on
+ */
+typedef uint8 CF_EnableFlag_Enum_t;
+
+/**
+ * @brief CF queue identifiers
+ */
+typedef enum
+{
+    CF_QueueIdx_PEND      = 0, /**< \brief tx transactions that have not started */
+    CF_QueueIdx_TX        = 1, /**< \brief tx transactions in progress */
+    CF_QueueIdx_RX        = 2, /**< \brief rx transactions in progress */
+    CF_QueueIdx_HIST      = 3, /**< \brief transaction history (completed) */
+    CF_QueueIdx_HIST_FREE = 4, /**< \brief unused transaction history structs */
+    CF_QueueIdx_FREE      = 5, /**< \brief unused transaction structs */
+    CF_QueueIdx_NUM       = 6
+} CF_QueueIdx_t;
+
+/**
+ * @brief Cache of source and destination filename
+ *
+ * This pairs a source and destination file name together
+ * to be retained for future reference in the transaction/history
+ */
+typedef struct CF_TxnFilenames
+{
+    char src_filename[CF_FILENAME_MAX_LEN];
+    char dst_filename[CF_FILENAME_MAX_LEN];
+} CF_TxnFilenames_t;
+
+/**
+ * @brief Entity id size
+ *
+ * @par Description:
+ *      The maximum size of the entity id as expected for all CFDP packets.
+ *      CF supports the spec's variable size of EID, where the actual size is
+ *      selected at runtime, and therefore the size in CFDP PDUs may be smaller
+ *      than the size specified here.  This type only establishes the maximum
+ *      size (and therefore maximum value) that an EID may be.
+ *
+ * @note This type is used in several CF commands, and so changing the size
+ *       of this type will affect the following structs:
+ *        CF_ConfigTable_t, configuration table - will change size of file
+ *        CF_ConfigPacket_t, set config params command
+ *        CF_TxFileCmd_t, transmit file command
+ *        CF_PlaybackDirCmd_t, equivalent to above
+ *        CF_Transaction_Payload_t, any command that selects a transaction based on EID
+ *
+ * @par Limits
+ *         Must be one of uint8, uint16, uint32, uint64.
+ */
+typedef uint32 CF_EntityId_t;
+
+/**
+ * @brief transaction sequence number size
+ *
+ * @par Description:
+ *      The max size of the transaction sequence number as expected for all CFDP packets.
+ *      CF supports the spec's variable size of TSN, where the actual size is
+ *      selected at runtime, and therefore the size in CFDP PDUs may be smaller
+ *      than the size specified here.  This type only establishes the maximum
+ *      size (and therefore maximum value) that a TSN may be.
+ *
+ * @note This type is used in several CF commands, and so changing the size
+ *       of this type will affect the following structure:
+ *        CF_Transaction_Payload_t, any command that selects a transaction based on TSN
+ *
+ * @par Limits
+ *         Must be one of uint8, uint16, uint32, uint64.
+ */
+typedef uint32 CF_TransactionSeq_t;
+
+#endif /* CF_EXTERN_TYPEDEFS_H */

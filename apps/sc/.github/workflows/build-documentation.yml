@@ -1,0 +1,22 @@
+name: Build Documentation
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+jobs:
+  build-documentation:
+    name: Build and deploy cFS documents
+    uses: nasa/cFS/.github/workflows/build-doc-reusable.yml@dev
+    with:
+      target: "[\"sc-usersguide\"]"
+      app-name: sc
+      buildpdf: ${{ github.event_name == 'push' && (contains(github.ref, 'main') || contains(github.ref, 'dev')) }}

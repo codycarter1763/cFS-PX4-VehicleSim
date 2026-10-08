@@ -1,0 +1,42 @@
+/************************************************************************
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
+ *
+ * Copyright (c) 2023 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ************************************************************************/
+
+/**
+ * @file
+ *   Specification for the CFS Limit Checker (LC) command and telemetry
+ *   message constant definitions.
+ *
+ * @note
+ *   These Macro definitions have been put in this file (instead of
+ *   lc_msg.h) so this file can be included directly into ASIST build
+ *   test scripts. ASIST RDL files can accept C language \#defines but
+ *   can't handle type definitions. As a result: DO NOT PUT ANY
+ *   TYPEDEFS OR STRUCTURE DEFINITIONS IN THIS FILE!
+ *   ADD THEM TO lc_msg.h IF NEEDED!
+ */
+#ifndef EDS_LC_MSGDEFS_H
+#define EDS_LC_MSGDEFS_H
+
+#include "lc_eds_typedefs.h"
+#include "lc_fcncodes.h"
+
+#ifndef LC_OMIT_DEPRECATED
+#define LC_ACTION_NOT_USED LC_APSTATE_NOT_USED
+#endif
+
+#endif

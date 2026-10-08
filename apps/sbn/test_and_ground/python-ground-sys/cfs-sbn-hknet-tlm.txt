@@ -1,0 +1,3 @@
+Function Code,                  12,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Protocol ID for network,	13,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Number of peers in network,	14,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL

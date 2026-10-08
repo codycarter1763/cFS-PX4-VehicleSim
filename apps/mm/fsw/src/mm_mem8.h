@@ -1,0 +1,105 @@
+/************************************************************************
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
+ *
+ * Copyright (c) 2023 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ************************************************************************/
+
+/**
+ * @file
+ *   Specification for the CFS Memory Manager functions that are used
+ *   for the conditionally compiled MM_MemType_MEM8 optional memory type.
+ */
+#ifndef MM_MEM8_H
+#define MM_MEM8_H
+
+/*************************************************************************
+ * Includes
+ *************************************************************************/
+#include "common_types.h"
+#include "mm_filedefs.h"
+#include "mm_msg.h"
+
+/*************************************************************************
+ * Exported Functions
+ *************************************************************************/
+
+/**
+ * \brief Memory8 load from file
+ *
+ *  \par Description
+ *       Support function for #MM_LoadMemFromFileCmd. This routine will
+ *       read a file and write the data to memory that is defined to
+ *       only be 8 bit accessible
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       This function is specific to the optional #MM_MemType_MEM8 memory
+ *       type
+ *
+ *  \param [in]   FileHandle   The open file handle of the load file
+ *  \param [in]   FileName     A pointer to a character string holding
+ *                             the load file name
+ *  \param [in]   FileHeader   Pointer to file header
+ *  \param [in]   DestAddress  The destination address for the requested
+ *                             load operation
+ *
+ *  \return Execution status
+ */
+int32 MM_LoadMem8FromFile(osal_id_t                      FileHandle,
+                          const char                    *FileName,
+                          const MM_LoadDumpFileHeader_t *FileHeader,
+                          cpuaddr                        DestAddress);
+
+/**
+ * \brief Memory8 dump to file
+ *
+ *  \par Description
+ *       Support function for #MM_DumpMemToFileCmd. This routine will
+ *       read an address range that is defined to only be 8 bit
+ *       accessible and store the data in a file
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       This function is specific to the optional #MM_MemType_MEM8 memory
+ *       type
+ *
+ *  \param [in]   FileHandle   The open file handle of the dump file
+ *  \param [in]   FileName     A pointer to a character string holding
+ *                             the dump file name
+ *  \param [in]   FileHeader   Pointer to file header
+ *
+ *  \return Execution status
+ */
+int32 MM_DumpMem8ToFile(osal_id_t FileHandle, const char *FileName, const MM_LoadDumpFileHeader_t *FileHeader);
+
+/**
+ * \brief Fill memory8
+ *
+ * \par Description
+ *      Support function for #MM_FillMemCmd. This routine will
+ *      load memory that is defined to only be 8 bit accessible
+ *      with a command specified fill pattern
+ *
+ * \par Assumptions, External Events, and Notes:
+ *      This function is specific to the optional #MM_MemType_MEM8 memory
+ *      type
+ *
+ * \param [in]   DestAddress   The destination address for the fill
+ *                              operation
+ * \param [in]   CmdPtr        Pointer to command
+ *
+ * \return Execution status
+ */
+int32 MM_FillMem8(cpuaddr DestAddress, const MM_FillMemCmd_t *CmdPtr);
+
+#endif

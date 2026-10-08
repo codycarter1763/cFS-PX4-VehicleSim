@@ -1,0 +1,579 @@
+<!--
+
+    GSC-18128-1, "Core Flight Executive Version 6.7"
+    LEW-19710-1, "CCSDS electronic data sheet implementation"
+
+    Copyright (c) 2006-2019 United States Government as represented by
+    the Administrator of the National Aeronautics and Space Administration.
+    All Rights Reserved.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    This document adheres to the Electronic Data Sheet (EDS) XML schema
+    as prescribed in CCSDS book 876.0.
+
+    Purpose:
+      This describes all interface objects for the Executive Services (CFE_ES)
+      core application
+
+-->
+<PackageFile xmlns="http://www.ccsds.org/schema/sois/seds">
+  <Package name="CS" shortDescription="CFS Checksum (CS) App">
+    <DataTypeSet>
+      <EnumeratedDataType name="ChecksumType">
+        <EnumerationList>
+          <Enumeration label="CFECORE" value="0" shortDescription="cFE Core checksum" />
+          <Enumeration label="OSCORE" value="1" shortDescription="OS Core checksum" />
+          <Enumeration label="EEPROM_TABLE" value="2" shortDescription="EEPROM checksum" />
+          <Enumeration label="MEMORY_TABLE" value="3" shortDescription="Memory checksum" />
+          <Enumeration label="TABLES_TABLE" value="4" shortDescription="Tables checksum" />
+          <Enumeration label="APP_TABLE" value="5" shortDescription="App checksum" />
+        </EnumerationList>
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+      </EnumeratedDataType>
+
+      <EnumeratedDataType name="ChecksumState">
+        <EnumerationList>
+          <Enumeration label="EMPTY" value="0" shortDescription="Entry unused" />
+          <Enumeration label="ENABLED" value="1" shortDescription="Entry or table enabled" />
+          <Enumeration label="DISABLED" value="2" shortDescription="Entry or table disabled" />
+          <Enumeration label="UNDEFINED" value="3" shortDescription="Entry not found state undefined" />
+        </EnumerationList>
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+      </EnumeratedDataType>
+
+      <ContainerDataType name="HkPacket_Payload">
+        <EntryList>
+          <Entry type="BASE_TYPES/uint8" name="CommandCounter" shortDescription="CS Application Command Counter" />
+          <Entry type="BASE_TYPES/uint8" name="CommandErrorCounter" shortDescription="CS Application Command Error Counter" />
+          <Entry type="ChecksumState" name="ChecksumState" shortDescription="CS Application global checksum state" />
+          <Entry type="ChecksumState" name="EepromCSState" shortDescription="CS EEPROM table checksum state" />
+          <Entry type="ChecksumState" name="MemoryCSState" shortDescription="CS Memory table checksum state" />
+          <Entry type="ChecksumState" name="AppCSState" shortDescription="CS App table checksum state" />
+          <Entry type="ChecksumState" name="TablesCSState" shortDescription="CS Tables table checksum state" />
+          <Entry type="ChecksumState" name="OSCSState" shortDescription="OS code segment checksum state" />
+          <Entry type="ChecksumState" name="CfeCoreCSState" shortDescription="cFE Core code segment checksum state" />
+          <Entry type="BASE_TYPES/uint8" name="RecomputeInProgress" shortDescription="CS Recompute In Progress flag" />
+          <Entry type="BASE_TYPES/uint8" name="OneShotInProgress" shortDescription="CS OneShot In Progress flag" />
+          <Entry type="BASE_TYPES/uint8" name="Filler8" shortDescription="8 bit padding" />
+          <Entry type="BASE_TYPES/uint16" name="EepromCSErrCounter" shortDescription="EEPROM miscompare counter" />
+          <Entry type="BASE_TYPES/uint16" name="MemoryCSErrCounter" shortDescription="Memory miscompare counter" />
+          <Entry type="BASE_TYPES/uint16" name="AppCSErrCounter" shortDescription="App miscompare counter" />
+          <Entry type="BASE_TYPES/uint16" name="TablesCSErrCounter" shortDescription="Tables miscompare counter" />
+          <Entry type="BASE_TYPES/uint16" name="CfeCoreCSErrCounter" shortDescription="cFE core miscompare counter" />
+          <Entry type="BASE_TYPES/uint16" name="OSCSErrCounter" shortDescription="OS code segment miscopmare counter" />
+          <Entry type="BASE_TYPES/uint16" name="CurrentCSTable" shortDescription="Current table being checksummed" />
+          <Entry type="BASE_TYPES/uint16" name="CurrentEntryInTable" shortDescription="Current entry ID in table being checksummed" />
+          <Entry type="BASE_TYPES/uint32" name="EepromBaseline" shortDescription="Baseline checksum for all of EEPROM" />
+          <Entry type="BASE_TYPES/uint32" name="OSBaseline" shortDescription="Baseline checksum for the OS code segment" />
+          <Entry type="BASE_TYPES/uint32" name="CfeCoreBaseline" shortDescription="Basline checksum for the cFE core" />
+          <Entry type="BASE_TYPES/MemReference" name="LastOneShotAddress" shortDescription="Address used in last one shot checksum command" />
+          <Entry type="BASE_TYPES/uint32" name="LastOneShotSize" shortDescription="Size used in the last one shot checksum command" />
+          <Entry type="BASE_TYPES/uint32" name="LastOneShotMaxBytesPerCycle" shortDescription="Max bytes per cycle for last one shot checksum command" />
+          <Entry type="BASE_TYPES/uint32" name="LastOneShotChecksum" shortDescription="Checksum of the last one shot checksum command" />
+          <Entry type="BASE_TYPES/uint32" name="PassCounter" shortDescription="Number of times CS has passed through all of its tables" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="GetEntryIDCmd_Payload" shortDescription="* Get entry ID command payload">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="Address" shortDescription="Address to get the ID for" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EntryCmd_Payload" shortDescription="* Payload for commands using Memory or EEPROM tables">
+        <EntryList>
+          <Entry type="BASE_TYPES/uint32" name="EntryID" shortDescription="EntryID to perform a command on" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="TableNameCmd_Payload" shortDescription="* Payload for commanding by table name">
+        <EntryList>
+          <Entry type="CFE_TBL/TableName" name="Name" shortDescription="Table name to perform a command on" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="AppNameCmd_Payload" shortDescription="* Payload for commanding by app name">
+        <EntryList>
+          <Entry type="BASE_TYPES/ApiName" name="Name" shortDescription="App name to perform a command on" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="OneShotCmd_Payload" shortDescription="* Payload for sending one shot calculation">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="Address" shortDescription="Address to start checksum" />
+          <Entry type="BASE_TYPES/uint32" name="Size" shortDescription="Number of bytes to checksum" />
+          <Entry type="BASE_TYPES/uint32" name="MaxBytesPerCycle" shortDescription="Max Number of bytes to compute per cycle. Value of Zero to use platform config" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="HkPacket" baseType="CFE_HDR/TelemetryHeader" shortDescription="Housekeeping Packet Structure">
+        <EntryList>
+          <Entry type="HkPacket_Payload" name="Payload" shortDescription="CS HK Payload" />
+        </EntryList>
+      </ContainerDataType>
+
+
+      <!-- table definitions start here -->
+
+      <ContainerDataType name="Def_EepromMemory_Table_Entry" shortDescription="Data structure for the EEPROM or Memory definition table">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="StartAddress" shortDescription="The Start address to Checksum" />
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above" />
+          <Entry type="BASE_TYPES/uint16" name="Filler16" shortDescription="Padding" />
+          <Entry type="BASE_TYPES/uint32" name="NumBytesToChecksum" shortDescription="The number of Bytes to Checksum" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="Res_EepromMemory_Table_Entry" shortDescription="Data structure for the Eeporom or Memory results table">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="StartAddress" shortDescription="The Start address to Checksum" />
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above"/>
+          <Entry type="BASE_TYPES/uint16" name="ComputedYet" shortDescription="Have we computed an Integrity value yet"/>
+          <Entry type="BASE_TYPES/uint32" name="NumBytesToChecksum" shortDescription="The number of Bytes to Checksum"/>
+          <Entry type="BASE_TYPES/uint32" name="ComparisonValue" shortDescription="The Memory Integrity Value"/>
+          <Entry type="BASE_TYPES/uint32" name="ByteOffset" shortDescription="Where a previous unfinished calc left off"/>
+          <Entry type="BASE_TYPES/uint32" name="TempChecksumValue" shortDescription="The unfinished caluculation"/>
+          <Entry type="BASE_TYPES/uint32" name="Filler32" shortDescription="Padding"/>
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="Def_Tables_Table_Entry" shortDescription="Data structure for the Tables definition table">
+        <EntryList>
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above" />
+          <Entry type="CFE_TBL/TableName" name="Name" shortDescription="name of the table" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="Def_App_Table_Entry" shortDescription="Data structure for the App definition table">
+        <EntryList>
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above" />
+          <Entry type="BASE_TYPES/ApiName" name="Name" shortDescription="name of the app" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="Res_Tables_Table_Entry" shortDescription="Data structure for the Tables result table">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="StartAddress" shortDescription="The Start address to Checksum" />
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above" />
+          <Entry type="BASE_TYPES/uint16" name="ComputedYet" shortDescription="Have we computed an Integrity value yet" />
+          <Entry type="BASE_TYPES/uint32" name="NumBytesToChecksum" shortDescription="The number of Bytes to Checksum" />
+          <Entry type="BASE_TYPES/uint32" name="ComparisonValue" shortDescription="The Memory Integrity Value" />
+          <Entry type="BASE_TYPES/uint32" name="ByteOffset" shortDescription="Where a previous unfinished calc left off" />
+          <Entry type="BASE_TYPES/uint32" name="TempChecksumValue" shortDescription="The unfinished caluculation" />
+          <Entry type="CFE_TBL/HandleId"  name="TblHandleID" shortDescription="handle recieved from CFE_TBL" />
+          <Entry type="BASE_TYPES/uint8" name="IsCSOwner" shortDescription="Is CS the original owner of this table" />
+          <Entry type="BASE_TYPES/uint8" name="Filler8" shortDescription="Padding" />
+          <Entry type="CFE_TBL/TableName" name="Name" shortDescription="name of the table" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="Res_App_Table_Entry" shortDescription="Data structure for the app result table">
+        <EntryList>
+          <Entry type="BASE_TYPES/MemReference" name="StartAddress" shortDescription="The Start address to Checksum" />
+          <Entry type="BASE_TYPES/uint16" name="State" shortDescription="Uses the CS_STATE_... defines from above" />
+          <Entry type="BASE_TYPES/uint16" name="ComputedYet" shortDescription="Have we computed an Integrity value yet" />
+          <Entry type="BASE_TYPES/uint32" name="NumBytesToChecksum" shortDescription="The number of Bytes to Checksum" />
+          <Entry type="BASE_TYPES/uint32" name="ComparisonValue" shortDescription="The Memory Integrity Value" />
+          <Entry type="BASE_TYPES/uint32" name="ByteOffset" shortDescription="Where a previous unfinished calc left off" />
+          <Entry type="BASE_TYPES/uint32" name="TempChecksumValue" shortDescription="The unfinished caluculation" />
+          <Entry type="BASE_TYPES/ApiName" name="Name" shortDescription="name of the app" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ArrayDataType name="Res_Eeprom_Table" dataTypeRef="Res_EepromMemory_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_EEPROM_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Res_App_Table" dataTypeRef="Res_App_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_APP_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Res_Memory_Table" dataTypeRef="Res_EepromMemory_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_MEMORY_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Res_Tables_Table" dataTypeRef="Res_Tables_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_TABLES_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Def_Eeprom_Table" dataTypeRef="Def_EepromMemory_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_EEPROM_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Def_App_Table" dataTypeRef="Def_App_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_APP_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Def_Memory_Table" dataTypeRef="Def_EepromMemory_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_MEMORY_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+      <ArrayDataType name="Def_Tables_Table" dataTypeRef="Def_Tables_Table_Entry" >
+        <DimensionList>
+            <Dimension size="${CS/MAX_NUM_TABLES_TABLE_ENTRIES}" />
+        </DimensionList>
+      </ArrayDataType>
+
+      <ContainerDataType name="SendHkCmd" baseType="CFE_HDR/CommandHeader" />
+      <ContainerDataType name="BackgroundCheckCycleCmd" baseType="CFE_HDR/CommandHeader" />
+
+      <!-- command definitions start here -->
+
+      <ContainerDataType name="CMD" baseType="CFE_HDR/CommandHeader" />
+
+      <ContainerDataType name="NoopCmd" baseType="CMD" shortDescription="Generate an info event message with app version">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="0" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ResetCountersCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="1" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="OneShotCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="2" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="OneShotCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="CancelOneShotCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="3" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableAllCSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="4" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableAllCSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="5" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableCfeCoreCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="6" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableCfeCoreCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="7" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineCfeCoreCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="8" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineCfeCoreCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="9" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableOSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="10" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableOSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="11" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineOSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="12" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineOSCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="13" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="14" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="15" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineEntryIDEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="16" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="17" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableEntryIDEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="18" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="DisableEntryIDEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="19" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="GetEntryIDEepromCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="20" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="GetEntryIDCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="21" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="22" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineEntryIDMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="23" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="24" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableEntryIDMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="25" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="DisableEntryIDMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="26" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="EntryCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="GetEntryIDMemoryCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="27" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="GetEntryIDCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableTablesCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="28" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableTablesCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="29" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineTableCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="30" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="TableNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineTableCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="31" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="TableNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableNameTableCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="32" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="TableNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="DisableNameTableCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="33" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="TableNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableAppsCmd" baseType="CMD">
+        <ConstraintSet>
+        <ValueConstraint entry="Sec.FunctionCode" value="34" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableAppsCmd" baseType="CMD">
+        <ConstraintSet>
+        <ValueConstraint entry="Sec.FunctionCode" value="35" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ReportBaselineAppCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="36" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="AppNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="RecomputeBaselineAppCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="37" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="AppNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableNameAppCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="38" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="AppNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="DisableNameAppCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="39" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry type="AppNameCmd_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+    </DataTypeSet>
+
+    <ComponentSet>
+      <Component name="Application">
+        <RequiredInterfaceSet>
+          <Interface name="ResEepromTbl" shortDescription="EEPROM Result table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Res_Eeprom_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="ResAppTbl" shortDescription="App Result table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Res_App_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="ResMemoryTbl" shortDescription="Memory Result table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Res_Memory_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="ResTablesTbl" shortDescription="Tables Result table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Res_Tables_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="DefEepromTbl" shortDescription="EEPROM Definitions table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Def_Eeprom_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="DefAppTbl" shortDescription="App Definitions table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Def_App_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="DefMemoryTbl" shortDescription="Memory Definitions table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Def_Memory_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="DefTablesTbl" shortDescription="Tables Definitions table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="Def_Tables_Table" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="CMD" shortDescription="Software bus telecommand interface" type="CFE_SB/Telecommand">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="CMD" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="SEND_HK" shortDescription="Send telemetry command interface" type="CFE_SB/Telecommand">
+            <!-- This uses a bare spacepacket with no payload -->
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="SendHkCmd" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="BACKGROUND_CYCLE" shortDescription="Background Wakeup Check Cycle" type="CFE_SB/Telecommand">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="BackgroundCheckCycleCmd" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="HK_TLM" shortDescription="Software bus housekeeping telemetry interface" type="CFE_SB/Telemetry">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelemetryDataType" type="HkPacket" />
+            </GenericTypeMapSet>
+          </Interface>
+        </RequiredInterfaceSet>
+        <Implementation>
+          <VariableSet>
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="CmdTopicId" initialValue="${CFE_MISSION/CS_CMD_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="SendHkTopicId" initialValue="${CFE_MISSION/CS_SEND_HK_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="BackgroundCycleTopicId" initialValue="${CFE_MISSION/CS_BACKGROUND_CYCLE_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="HkTlmTopicId" initialValue="${CFE_MISSION/CS_HK_TLM_TOPICID}" />
+          </VariableSet>
+          <!-- Assign fixed numbers to the "TopicId" parameter of each interface -->
+          <ParameterMapSet>
+            <ParameterMap interface="CMD" parameter="TopicId" variableRef="CmdTopicId" />
+            <ParameterMap interface="SEND_HK" parameter="TopicId" variableRef="SendHkTopicId" />
+            <ParameterMap interface="BACKGROUND_CYCLE" parameter="TopicId" variableRef="BackgroundCycleTopicId" />
+            <ParameterMap interface="HK_TLM" parameter="TopicId" variableRef="HkTlmTopicId" />
+          </ParameterMapSet>
+        </Implementation>
+      </Component>
+    </ComponentSet>
+
+  </Package>
+</PackageFile>

@@ -1,0 +1,17 @@
+name: Internal Format Check
+
+# Run on all push and pull requests
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+jobs:
+  format-check:
+    name: Run format check
+    # do not run on integration candidate branches
+    if: ${{ !startsWith(github.head_ref != '' && github.head_ref || github.ref_name, 'ic-') }}
+    uses: cFS/workflows/.github/workflows/format-check-reusable-internal.yml@dev

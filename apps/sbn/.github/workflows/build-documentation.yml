@@ -1,0 +1,15 @@
+name: Build Documentation
+
+# SBN does not (yet) have a doxygen-based users guide
+# This workflow is for possible future use after one is added
+on:
+  workflow_dispatch:
+
+jobs:
+  build-documentation:
+    name: Build and deploy cFS documents
+    uses: nasa/cFS/.github/workflows/build-doc-reusable.yml@dev
+    with:
+      target: "[\"sbn-usersguide\"]"
+      app-name: sbn
+      buildpdf: ${{ github.event_name == 'push' && (contains(github.ref, 'main') || contains(github.ref, 'dev')) }}

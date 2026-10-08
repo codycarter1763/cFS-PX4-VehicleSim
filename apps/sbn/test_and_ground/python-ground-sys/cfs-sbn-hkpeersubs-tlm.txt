@@ -1,0 +1,4 @@
+Function Code,                  	12,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Network,				13,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Index of the peer in the request,	15,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of local subscriptions,		17,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL

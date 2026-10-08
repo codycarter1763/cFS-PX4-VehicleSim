@@ -1,0 +1,176 @@
+name: "CodeQL Reusable Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      # REQUIRED Inputs
+      component-path:
+        description: 'Path to repo being tested in a cFS bundle setup'
+        type: string
+        required: true
+        default: cFS
+
+      # Optional inputs
+      app-name:
+        description: Application name, if different from repo name
+        type: string
+        required: false
+        default: ${{ github.event.repository.name }}
+
+      category:
+        description: 'Analysis Category'
+        required: false
+        type: string
+
+      make:
+        description: 'Build Command'
+        default: '' #Typically `make` or `make install`. Default is blank for workflows that don't need to build source
+        required: false
+        type: string
+
+      prep:
+        description: 'Make Prep'
+        default: make prep
+        required: false
+        type: string
+
+      setup:
+        description: 'Build Prep Commands'
+        type: string
+        default: ''
+        required: false
+
+      test:
+        description: 'Value for ENABLE_UNIT_TESTS flag'
+        type: string
+        default: 'false'
+        required: false
+
+      dependency:
+        description: Additional module/library that this app depends on
+        type: string
+        required: false
+        default: ''
+
+
+# Force bash to apply pipefail option so pipeline failures aren't masked
+defaults:
+  run:
+    shell: bash
+
+env:
+  SIMULATION: native
+  ENABLE_UNIT_TESTS: ${{inputs.test}}
+  OMIT_DEPRECATED: false
+  BUILDTYPE: debug
+  REPO: ${{github.event.repository.name}}
+
+jobs:
+  Analysis:
+    runs-on: ubuntu-latest
+    container: ghcr.io/core-flight-system/cfsbuildenv-linux:latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scan-type: [security, coding-standard]
+
+    permissions:
+      security-events: write
+
+    steps:
+      # For apps
+      - name: Set up app source
+        if: contains(inputs.component-path, 'apps')
+        uses: nasa/cFS/actions/setup-app@dev
+        with:
+          app-name: ${{ inputs.app-name }}
+          dependency: ${{ inputs.dependency }}
+
+      # For osal cFS bundle build, tools, and psp
+      - name: Checkout cFS Bundle
+        if: inputs.component-path == 'osal-bundle' || contains(inputs.component-path, 'tools') || inputs.component-path == 'psp'
+        uses: actions/checkout@v6
+        with:
+           submodules: recursive
+           repository: nasa/cFS
+           ref: dev
+
+      # For cFS bundle, cFE, osal
+      - name: Checkout Current Repo
+        if: "!contains(inputs.component-path, 'apps')"
+        uses: actions/checkout@v6
+        with:
+           submodules: recursive
+           path: ${{ inputs.component-path == 'osal-bundle' && 'osal' || (inputs.component-path != 'cFS' && inputs.component-path != 'osal' && inputs.component-path || '') }}
+
+      # For cFE
+      - name: Set up cFE
+        if: inputs.component-path == 'cfe'
+        uses: nasa/cFE/.github/actions/setup-cfe@dev
+        with:
+          source-dir: .
+          preferred-ref: ${{ github.head_ref }}
+          org: nasa
+
+      # For osal
+      - name: Setup Build
+        if: inputs.component-path == 'osal'
+        run: |
+          ${{ inputs.setup }}
+
+      - name: Prep Build
+        run: |
+          ${{ inputs.prep }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: cpp
+          build-mode: manual
+          config-file: nasa/cFS/.github/codeql/codeql-${{matrix.scan-type}}.yml@dev
+
+      - name: Build
+        run: ${{ inputs.make }}
+        working-directory: ${{env.BUILD_DIRECTORY}}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: ${{matrix.scan-type}}
+          upload: false
+          output: CodeQL-Sarif-${{ matrix.scan-type }}
+
+      - name: Rename Sarif
+        run: |
+          mv CodeQL-Sarif-${{ matrix.scan-type }}/cpp.sarif CodeQL-Sarif-${{ matrix.scan-type }}/Codeql-${{ matrix.scan-type }}.sarif
+          sed -i 's/"name" : "CodeQL"/"name" : "CodeQL-${{ matrix.scan-type }}"/g' CodeQL-Sarif-${{ matrix.scan-type }}/Codeql-${{ matrix.scan-type }}.sarif
+
+      - name: filter-sarif
+        uses: advanced-security/filter-sarif@v1
+        with:
+            patterns: |
+                -**/*.md
+                -**/*.txt
+                -**/*.dox
+            input: CodeQL-Sarif-${{ matrix.scan-type }}/Codeql-${{ matrix.scan-type }}.sarif
+            output: CodeQL-Sarif-${{ matrix.scan-type }}/Codeql-${{ matrix.scan-type }}.sarif
+
+      - name: Archive Sarif
+        uses: actions/upload-artifact@v7
+        with:
+          name: CodeQL-Sarif-${{ matrix.scan-type }}
+          path: CodeQL-Sarif-${{ matrix.scan-type }}
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: CodeQL-Sarif-${{ matrix.scan-type }}/Codeql-${{ matrix.scan-type }}.sarif
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
+          checkout_path: ${{
+            inputs.component-path == 'osal-bundle' && format('{0}/osal', github.workspace) ||
+            (contains(inputs.component-path, 'apps') || contains(inputs.component-path, 'tools')) && format('{0}/{1}', github.workspace, inputs.component-path) ||
+            github.workspace
+            }}

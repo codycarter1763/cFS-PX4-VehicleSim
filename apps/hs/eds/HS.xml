@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    GSC-18128-1, "Core Flight Executive Version 6.7"
+    LEW-19710-1, "CCSDS electronic data sheet implementation"
+
+    Copyright (c) 2006-2019 United States Government as represented by
+    the Administrator of the National Aeronautics and Space Administration.
+    All Rights Reserved.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    This document adheres to the Electronic Data Sheet (EDS) XML schema
+    as prescribed in CCSDS book 876.0.
+
+    Purpose:
+      This describes all interface objects for the Executive Services (CFE_ES)
+      core application
+
+-->
+<PackageFile xmlns="http://www.ccsds.org/schema/sois/seds">
+  <Package name="HS" shortDescription="Health and Safety">
+
+    <DataTypeSet>
+
+      <EnumeratedDataType name="State">
+        <EnumerationList>
+          <Enumeration label="DISABLED" value="0" shortDescription="HS Switch States (AppMon, EventMon, Aliveness) Disabled" />
+          <Enumeration label="ENABLED" value="1" shortDescription="HS Switch States (AppMon, EventMon, Aliveness) Enabled" />
+        </EnumerationList>
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+      </EnumeratedDataType>
+
+      <EnumeratedDataType name="StatusFlag">
+        <EnumerationList>
+          <Enumeration label="LOADED_XCT" value="0x01" shortDescription="Execution Counter Table Loaded" />
+          <Enumeration label="LOADED_MAT" value="0x02" shortDescription="Message Actions Table Loaded" />
+          <Enumeration label="LOADED_AMT" value="0x04" shortDescription="Application Monitor Table Loaded" />
+          <Enumeration label="LOADED_EMT" value="0x08" shortDescription="Event Monitor Table Loaded" />
+          <Enumeration label="CDS_IN_USE" value="0x10" shortDescription="Critical Data Store In Use" />
+        </EnumerationList>
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+      </EnumeratedDataType>
+
+      <ContainerDataType name="CMD" baseType="CFE_HDR/CommandHeader">
+      </ContainerDataType>
+
+      <ContainerDataType name="SendHkCmd" baseType="CFE_HDR/CommandHeader" shortDescription="Send Housekeeping command" />
+
+      <ContainerDataType name="Wakeup" baseType="CFE_HDR/CommandHeader" shortDescription="Send Wakeup command" />
+
+      <ArrayDataType name="ExeCounts" dataTypeRef="BASE_TYPES/uint32">
+        <DimensionList>
+          <Dimension size="${HS/MAX_EXEC_CNT_SLOTS}"/>
+        </DimensionList>
+      </ArrayDataType>
+
+      <ArrayDataType name="AppMonEnables" dataTypeRef="BASE_TYPES/StatusBit">
+        <DimensionList>
+          <Dimension size="${HS/MAX_MONITORED_APPS}"/>
+        </DimensionList>
+      </ArrayDataType>
+
+       <ContainerDataType name="HkTlm_Payload" shortDescription="HK housekeeping">
+        <EntryList>
+          <Entry name="CmdCount" type="BASE_TYPES/uint8" shortDescription="Count of valid commands received" />
+          <Entry name="CmdErrCount" type="BASE_TYPES/uint8" shortDescription="Count of invalid commands received" />
+
+          <Entry name="CurrentAppMonState" type="State" />
+          <Entry name="CurrentEventMonState" type="State" />
+          <Entry name="CurrentAlivenessState" type="State" />
+          <Entry name="CurrentCPUHogState" type="State" />
+          <Entry name="StatusFlags" type="BASE_TYPES/uint8" />
+          <Entry name="SpareBytes" type="BASE_TYPES/uint8" />
+          <Entry name="ResetsPerformed" type="BASE_TYPES/uint16" />
+          <Entry name="MaxResets" type="BASE_TYPES/uint16" />
+          <Entry name="EventsMonitoredCount" type="BASE_TYPES/uint32" />
+          <Entry name="InactiveEventMonCount" type="BASE_TYPES/uint32" />
+
+          <Entry name="AppMonEnables" type="AppMonEnables" />
+
+          <Entry name="MsgActExec" type="BASE_TYPES/uint32" />
+          <Entry name="UtilCpuAvg" type="BASE_TYPES/uint32" />
+          <Entry name="UtilCpuPeak" type="BASE_TYPES/uint32" />
+
+          <Entry name="ExeCounts" type="ExeCounts" />
+        </EntryList>
+      </ContainerDataType>
+
+       <ContainerDataType name="SetMaxResets_Payload">
+        <EntryList>
+          <Entry name="MaxResets" type="BASE_TYPES/uint16" />
+          <Entry name="Padding" type="BASE_TYPES/uint16" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="HkPacket" baseType="CFE_HDR/TelemetryHeader">
+        <EntryList>
+          <Entry type="HkTlm_Payload" name="Payload" />
+        </EntryList>
+      </ContainerDataType>
+
+      <ContainerDataType name="NoopCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="0" />
+        </ConstraintSet>
+      </ContainerDataType>
+
+      <ContainerDataType name="ResetCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="1" />
+        </ConstraintSet>
+      </ContainerDataType>
+
+      <ContainerDataType name="EnableAppMonCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="2" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableAppMonCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="3" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableEventMonCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="4" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableEventMonCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="5" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="EnableAlivenessCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="6" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableAlivenessCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="7" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="ResetResetsPerformedCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="8" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="SetMaxResetsCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="9" />
+        </ConstraintSet>
+        <EntryList>
+          <Entry name="Payload" type="SetMaxResets_Payload" />
+        </EntryList>
+      </ContainerDataType>
+      <ContainerDataType name="EnableCpuHogCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="10" />
+        </ConstraintSet>
+      </ContainerDataType>
+      <ContainerDataType name="DisableCpuHogCmd" baseType="CMD">
+        <ConstraintSet>
+          <ValueConstraint entry="Sec.FunctionCode" value="11" />
+        </ConstraintSet>
+      </ContainerDataType>
+
+
+     <EnumeratedDataType name="AMTActType">
+         <EnumerationList>
+             <Enumeration label="NOACT" value="0" shortDescription="No action is taken" />
+             <Enumeration label="PROC_RESET" value="1" shortDescription="Generates Processor Reset on failure" />
+             <Enumeration label="APP_RESTART" value="2" shortDescription="Attempts to restart application on failure" />
+             <Enumeration label="EVENT" value="3" shortDescription="Generates event message on failure" />
+             <Enumeration label="LAST_NONMSG" value="3" shortDescription="Index for finding end of non-message actions" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="EMTActType">
+         <EnumerationList>
+             <Enumeration label="NOACT" value="0" shortDescription="No action is taken" />
+             <Enumeration label="PROC_RESET" value="1" shortDescription="Generates Processor Reset on detection" />
+             <Enumeration label="APP_RESTART" value="2" shortDescription="Attempts to restart application on detection" />
+             <Enumeration label="APP_DELETE" value="3" shortDescription="Deletes application on detection" />
+             <Enumeration label="LAST_NONMSG" value="3" shortDescription="Index for finding end of non-message actions" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="XCTResType">
+         <EnumerationList>
+             <Enumeration label="NOTYPE" value="0" shortDescription="No type" />
+             <Enumeration label="APP_MAIN" value="1" shortDescription="Counter for Application Main task" />
+             <Enumeration label="APP_CHILD" value="2" shortDescription="Counter for Application Child task" />
+             <Enumeration label="DEVICE" value="3" shortDescription="Counter for Device Driver" />
+             <Enumeration label="ISR" value="4" shortDescription="Counter for Interrupt Service Routine" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="MATState">
+         <EnumerationList>
+             <Enumeration label="DISABLED" value="0" shortDescription="Message Actions are Disabled" />
+             <Enumeration label="ENABLED" value="1" shortDescription="Message Actions are Enabled" />
+             <Enumeration label="NOEVENT" value="2" shortDescription="Message Actions are Enabled but produce no events" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="AMTVal">
+         <EnumerationList>
+             <Enumeration label="NO_ERR" value="0" shortDescription="No error" />
+             <Enumeration label="ERR_ACT" value="-1" shortDescription="Invalid ActionType specified" />
+             <Enumeration label="ERR_NUL" value="-2" shortDescription="Null Safety Buffer not Null" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="signed" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="EMTVal">
+         <EnumerationList>
+             <Enumeration label="NO_ERR" value="0" shortDescription="No error" />
+             <Enumeration label="ERR_ACT" value="-1" shortDescription="Invalid ActionType specified" />
+             <Enumeration label="ERR_NUL" value="-2" shortDescription="Null Safety Buffer not Null" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="signed" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="XCTVal">
+         <EnumerationList>
+             <Enumeration label="NO_ERR" value="0" shortDescription="No error" />
+             <Enumeration label="ERR_TYPE" value="-1" shortDescription="Invalid Counter Type specified" />
+             <Enumeration label="ERR_NUL" value="-2" shortDescription="Null Safety Buffer not Null" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="signed" />
+     </EnumeratedDataType>
+
+     <EnumeratedDataType name="MATVal">
+         <EnumerationList>
+             <Enumeration label="NO_ERR" value="0" shortDescription="No error" />
+             <Enumeration label="ERR_ID" value="-1" shortDescription="Invalid Message ID specified" />
+             <Enumeration label="ERR_LEN" value="-2" shortDescription="Invalid Length specified" />
+             <Enumeration label="ERR_ENA" value="-3" shortDescription="Invalid Enable State specified" />
+         </EnumerationList>
+         <IntegerDataEncoding sizeInBits="8" encoding="signed" />
+     </EnumeratedDataType>
+
+     <ArrayDataType name="MsgArray" dataTypeRef="BASE_TYPES/uint8">
+       <DimensionList>
+         <Dimension size="${HS/MAX_MSG_ACT_SIZE}" />
+       </DimensionList>
+     </ArrayDataType>
+
+     <ContainerDataType name="MATMsgBuf" shortDescription="Message Action Table buffer">
+      <EntryList>
+        <Entry name="Message" type="CFE_HDR/CommandHeader" shortDescription="If entry contains message" />
+      </EntryList>
+    </ContainerDataType>
+
+     <ContainerDataType name="MATEntry" shortDescription="Message Actions Table (MAT) Entry">
+      <EntryList>
+        <Entry name="EnableState" type="BASE_TYPES/uint16" shortDescription="If entry contains message" />
+        <Entry name="Cooldown" type="BASE_TYPES/uint16" shortDescription="Minimum rate at which message can be sent" />
+        <Entry name="MsgBuf" type="MATMsgBuf" shortDescription="Message to be sent" />
+      </EntryList>
+     </ContainerDataType>
+
+     <ContainerDataType name="AMTEntry" shortDescription="Application Monitor Table (AMT) Entry">
+      <EntryList>
+        <Entry name="AppName" type="BASE_TYPES/ApiName" shortDescription="Name of application to be monitored" />
+        <Entry name="NullTerm" type="BASE_TYPES/uint16" shortDescription="Buffer of nulls to terminate string" />
+        <Entry name="CycleCount" type="BASE_TYPES/uint16" shortDescription="Number of cycles before application is missing" />
+        <Entry name="ActionType" type="BASE_TYPES/uint16" shortDescription="Action to take if application is missing" />
+      </EntryList>
+     </ContainerDataType>
+
+     <ContainerDataType name="EMTEntry" shortDescription="Event Monitor Table (EMT) Entry">
+      <EntryList>
+        <Entry name="AppName" type="BASE_TYPES/ApiName" shortDescription="Name of application generating event" />
+        <Entry name="NullTerm" type="BASE_TYPES/uint16" shortDescription="Buffer of nulls to terminate string" />
+        <Entry name="EventID" type="BASE_TYPES/uint16" shortDescription="Event number of monitored event" />
+        <Entry name="ActionType" type="BASE_TYPES/uint16" shortDescription="Action to take if event is received" />
+      </EntryList>
+     </ContainerDataType>
+
+     <ContainerDataType name="XCTEntry" shortDescription="Execution Counters Table (XCT) Entry">
+      <EntryList>
+        <Entry name="ResourceName" type="BASE_TYPES/ApiName" shortDescription="Name of resource being monitored" />
+        <Entry name="NullTerm" type="BASE_TYPES/uint32" shortDescription="Buffer of nulls to terminate string" />
+        <Entry name="ResourceType" type="BASE_TYPES/uint32" shortDescription="Type of execution counter" />
+      </EntryList>
+     </ContainerDataType>
+
+     <ArrayDataType name="MsgActs_Tbl" dataTypeRef="MATEntry">
+      <DimensionList>
+        <Dimension size="${HS/MAX_MSG_ACT_TYPES}" />
+      </DimensionList>
+     </ArrayDataType>
+
+     <ArrayDataType name="AppMon_Tbl" dataTypeRef="AMTEntry">
+      <DimensionList>
+        <Dimension size="${HS/MAX_MONITORED_APPS}" />
+      </DimensionList>
+     </ArrayDataType>
+
+     <ArrayDataType name="EventMon_Tbl" dataTypeRef="EMTEntry">
+      <DimensionList>
+        <Dimension size="${HS/MAX_MONITORED_EVENTS}" />
+      </DimensionList>
+     </ArrayDataType>
+
+     <ArrayDataType name="ExeCount_Tbl" dataTypeRef="XCTEntry">
+      <DimensionList>
+        <Dimension size="${HS/MAX_EXEC_CNT_SLOTS}" />
+      </DimensionList>
+     </ArrayDataType>
+
+  </DataTypeSet>
+
+    <ComponentSet>
+      <Component name="Application">
+        <RequiredInterfaceSet>
+          <Interface name="MsgActs_Tbl" shortDescription="Action Table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="MsgActs_Tbl" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="AppMon_Tbl" shortDescription="App Monitor Table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="AppMon_Tbl" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="EventMon_Tbl" shortDescription="Event Monitor Table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="EventMon_Tbl" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="ExeCount_Tbl" shortDescription="Execution Count table" type="CFE_TBL/Table">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TableDataType" type="ExeCount_Tbl" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="CMD" shortDescription="HS Ground Commands Message ID" type="CFE_SB/Telecommand">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="CMD" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="SEND_HK" shortDescription="HS Send Hk Data Cmd Message ID" type="CFE_SB/Telecommand">
+            <!-- This uses a bare spacepacket with no payload -->
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="SendHkCmd" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="WAKEUP" shortDescription="HS Wakeup Message ID" type="CFE_SB/Telecommand">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelecommandDataType" type="Wakeup" />
+            </GenericTypeMapSet>
+          </Interface>
+          <Interface name="HK_TLM" shortDescription="HS Hk Telemetry Message ID" type="CFE_SB/Telemetry">
+            <GenericTypeMapSet>
+              <GenericTypeMap name="TelemetryDataType" type="HkPacket" />
+            </GenericTypeMapSet>
+          </Interface>
+        </RequiredInterfaceSet>
+        <Implementation>
+          <VariableSet>
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="CmdTopicId" initialValue="${CFE_MISSION/HS_CMD_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="SendHkTopicId" initialValue="${CFE_MISSION/HS_SEND_HK_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="WakeupTopicId" initialValue="${CFE_MISSION/HS_WAKEUP_TOPICID}" />
+            <Variable type="BASE_TYPES/uint16" readOnly="true" name="HkTlmTopicId" initialValue="${CFE_MISSION/HS_HK_TLM_TOPICID}" />
+          </VariableSet>
+          <!-- Assign fixed numbers to the "TopicId" parameter of each interface -->
+          <ParameterMapSet>
+            <ParameterMap interface="CMD" parameter="TopicId" variableRef="CmdTopicId" />
+            <ParameterMap interface="SEND_HK" parameter="TopicId" variableRef="SendHkTopicId" />
+            <ParameterMap interface="WAKEUP" parameter="TopicId" variableRef="WakeupTopicId" />
+            <ParameterMap interface="HK_TLM" parameter="TopicId" variableRef="HkTlmTopicId" />
+          </ParameterMapSet>
+        </Implementation>
+      </Component>
+    </ComponentSet>
+
+  </Package>
+</PackageFile>

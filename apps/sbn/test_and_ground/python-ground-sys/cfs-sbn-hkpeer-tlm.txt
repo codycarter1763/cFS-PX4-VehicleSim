@@ -1,0 +1,11 @@
+Function Code,                  		12,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Processor ID of the peer,			13,  4,  I,   Dec, NULL,        NULL,        NULL,       NULL
+Time of last send to peer (1),			17,  4,  I,   Hex, NULL,        NULL,        NULL,       NULL
+Time of last send to peer (2),	 		21,  4,  I,   Hex, NULL,        NULL,        NULL,       NULL
+Time of last receive from peer (1),		25,  4,  I,   Hex, NULL,        NULL,        NULL,       NULL
+Time of last receive from peer (2), 		29,  4,  I,   Hex, NULL,        NULL,        NULL,       NULL
+Number of messages sent to peer,		33,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of messages received from peer,		35,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of errors generated sending to peer,	37,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of errors generated receiving from peer,	39,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of subscriptions for this peer,		41,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL

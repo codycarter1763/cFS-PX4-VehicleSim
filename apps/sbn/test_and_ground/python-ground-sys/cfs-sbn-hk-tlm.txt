@@ -1,0 +1,5 @@
+Function Code,                  	12,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Number of commands received,		13,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of commands that errorred,	15,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of local subscriptions,		17,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
+Number of networks configured,		19,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL

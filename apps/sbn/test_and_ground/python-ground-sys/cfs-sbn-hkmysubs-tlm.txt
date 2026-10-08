@@ -1,0 +1,2 @@
+Function Code,                  12,  1,  B,   Dec, NULL,        NULL,        NULL,       NULL
+Number of local subscriptions,	13,  2,  H,   Dec, NULL,        NULL,        NULL,       NULL
