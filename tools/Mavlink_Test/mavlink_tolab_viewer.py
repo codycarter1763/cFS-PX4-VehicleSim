@@ -1,10 +1,11 @@
-
 #!/usr/bin/env python3
 """cFS MAVLink dashboard: enables TO_LAB output, decodes MAVLINK_APP packets, shows them in Tk."""
 import socket
 import struct
 import threading
+import time
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk
 
 # ---- Configuration --------------------------------------------------------
@@ -15,11 +16,14 @@ TO_CMD_MID, ENABLE_FC = 0x1880, 0x06    # TO_LAB "enable output" command
 HK_MID, NAV_MID = 0x08B4, 0x08B5        # MAVLINK_APP telemetry message IDs
 HEADER_LEN = 16                         # CCSDS primary (6) + cFE telemetry secondary (10)
 
+# Seconds without any packet before the dashboard reports DISCONNECTED.
+STALE_TIMEOUT_S = 2.0
+
 SC_CMD_MID = 0x18A9                     # SC command MID
 SC_START_RTS_FC, SC_ENABLE_RTS_FC = 4, 7
 MISSION_RTS = 3                         # RTS table holding START_MISSION
-GPS_FAILURE_RTS = 4                      # RTS table holding GPS failure command
-GPS_RESTORE_RTS = 5                      # RTS table holding GPS restore command
+GPS_FAILURE_RTS = 4                     # RTS table holding GPS failure command
+GPS_RESTORE_RTS = 5                     # RTS table holding GPS restore command
 
 # ---- Packet layouts (must match the C structs) ----------------------------
 HK_FMT = "<BBBBBBBbffI"                 # 20 bytes
@@ -47,7 +51,9 @@ NAV_SCALE = {
 
 # ---- Shared state ---------------------------------------------------------
 telemetry = {k: 0 for k in HK_FIELDS + NAV_FIELDS}
-telemetry.update(connected=False, last_mid=0, packet_count=0)
+# last_rx: time.monotonic() of the most recent packet (0 = nothing received yet)
+# bind_error: message string if the telemetry socket could not be bound
+telemetry.update(last_rx=0.0, last_mid=0, packet_count=0, bind_error=None)
 lock = threading.Lock()
 running = True
 
@@ -84,7 +90,6 @@ def decode(fields, fmt, payload, scale=()):
     with lock:
         for key, value in zip(fields, values):
             telemetry[key] = value / scale[key] if key in scale else value
-        telemetry["connected"] = True
 
 
 def handle_packet(data):
@@ -96,6 +101,7 @@ def handle_packet(data):
     with lock:
         telemetry["last_mid"] = mid
         telemetry["packet_count"] += 1
+        telemetry["last_rx"] = time.monotonic()
 
     if len(data) >= HEADER_LEN:
         if mid == HK_MID:
@@ -114,8 +120,10 @@ def receive_loop():
         sock.bind(LISTEN_ADDR)
         sock.settimeout(1.0)
     except OSError as exc:
-        print(f"Could not bind telemetry socket {LISTEN_ADDR}: {exc}")
-        running = False
+        msg = f"Could not bind UDP {LISTEN_ADDR[0]}:{LISTEN_ADDR[1]}: {exc}"
+        print(msg)
+        with lock:
+            telemetry["bind_error"] = msg
         sock.close()
         return
 
@@ -141,32 +149,29 @@ SECTIONS = [
         ("Armed", "armed", _armed),
         ("Main Mode", "main_mode", "{}"),
         ("Sub Mode", "sub_mode", "{}"),
-        ("Heartbeats", "heartbeat_count", "{}"),
-        ("Command Count", "command_counter", "{}"),
-        ("Command Errors", "command_error_counter", "{}")
+        ("Heartbeats", "heartbeat_count", "{}")
     ]),
     ("GPS / Position", 0, 1, [
         ("Fix Type", "gps_fix_type", "{}"),
         ("Satellites", "gps_satellites", "{}"),
-        ("Latitude", "latitude", "{:.7f}°"),
-        ("Longitude", "longitude", "{:.7f}°"),
-        ("Relative Altitude", "relative_altitude", "{:.3f} m"),
+        ("Latitude", "latitude", "{:.2f}°"),
+        ("Longitude", "longitude", "{:.2f}°"),
+        ("Relative Altitude", "relative_altitude", "{:.1f} m"),
         ("Heading", "heading", "{:.2f}°")
     ]),
     ("Battery", 1, 0, [
         ("Remaining", "battery_remaining", "{}%"),
-        ("Voltage", "battery_voltage", "{:.2f} V"),
-        ("Current", "battery_current", "{:.2f} A")
+        ("Voltage", "battery_voltage", "{:.2f} V")
     ]),
     ("Attitude", 1, 1, [
-        ("Roll", "roll", "{:.6f} rad"),
-        ("Pitch", "pitch", "{:.6f} rad"),
-        ("Yaw", "yaw", "{:.6f} rad")
+        ("Roll", "roll", "{:.2f} rad"),
+        ("Pitch", "pitch", "{:.2f} rad"),
+        ("Yaw", "yaw", "{:.2f} rad")
     ]),
     ("Angular Rates", 2, 0, [
-        ("Roll Rate", "roll_rate", "{:.6f} rad/s"),
-        ("Pitch Rate", "pitch_rate", "{:.6f} rad/s"),
-        ("Yaw Rate", "yaw_rate", "{:.6f} rad/s")
+        ("Roll Rate", "roll_rate", "{:.2f} rad/s"),
+        ("Pitch Rate", "pitch_rate", "{:.2f} rad/s"),
+        ("Yaw Rate", "yaw_rate", "{:.2f} rad/s")
     ]),
     ("Velocity", 2, 1, [
         ("Vx", "vx", "{:.2f} m/s"),
@@ -180,9 +185,11 @@ class Dashboard:
     def __init__(self, root):
         self.root = root
         root.title("cFS MAVLink Telemetry Dashboard")
-        root.geometry("1000x720")
-        root.minsize(850, 600)
+        root.geometry("1000x760")
+        root.minsize(850, 680)
         root.protocol("WM_DELETE_WINDOW", self.close)
+
+        self.count_before = 0
 
         style = ttk.Style()
         try:
@@ -190,9 +197,19 @@ class Dashboard:
         except tk.TclError:
             pass
 
-        style.configure("Title.TLabel", font=("TkDefaultFont", 18, "bold"))
-        style.configure("Section.TLabelframe.Label", font=("TkDefaultFont", 11, "bold"))
-        style.configure("Value.TLabel", font=("TkDefaultFont", 12, "bold"))
+        # Derive fonts from the platform's default font so the family is valid.
+        # Keep references on self so they aren't garbage collected.
+        base = tkfont.nametofont("TkDefaultFont")
+        self.title_font = base.copy()
+        self.title_font.configure(size=18, weight="bold")
+        self.section_font = base.copy()
+        self.section_font.configure(size=11, weight="bold")
+        self.value_font = base.copy()
+        self.value_font.configure(size=12, weight="bold")
+
+        style.configure("Title.TLabel", font=self.title_font)
+        style.configure("Section.TLabelframe.Label", font=self.section_font)
+        style.configure("Value.TLabel", font=self.value_font)
 
         top = ttk.Frame(root)
         top.pack(fill="x", padx=15, pady=(12, 5))
@@ -203,7 +220,9 @@ class Dashboard:
             style="Title.TLabel"
         ).pack(side="left")
 
-        self.conn = ttk.Label(top, text="● DISCONNECTED", style="Value.TLabel")
+        self.conn = ttk.Label(
+            top, text="● DISCONNECTED", style="Value.TLabel", foreground="red"
+        )
         self.conn.pack(side="right")
 
         main = ttk.Frame(root)
@@ -277,18 +296,36 @@ class Dashboard:
         self.last_mid = ttk.Label(bottom, text="Last MID: --")
         self.last_mid.pack(side="right")
 
+        # Shows socket errors (e.g. port already in use) in the GUI.
+        self.error = ttk.Label(bottom, text="", foreground="red")
+        self.error.pack(side="left", padx=15)
+
         self.refresh()
 
     def refresh(self):
         with lock:
             d = dict(telemetry)
 
-        self.conn.config(
-            text="● CONNECTED" if d["connected"] else "● DISCONNECTED"
-        )
+        have_data = d["last_rx"] > 0
+        alive = have_data and (time.monotonic() - d["last_rx"]) < STALE_TIMEOUT_S
 
+        if d["bind_error"]:
+            self.conn.config(text="● NO SOCKET", foreground="red")
+            self.error.config(text=d["bind_error"])
+        elif alive:
+            self.conn.config(text="● CONNECTED", foreground="green")
+            self.error.config(text="")
+        else:
+            self.conn.config(text="● DISCONNECTED", foreground="red")
+            self.error.config(text="")
+
+        # Show "--" until the first packet arrives so real zeros are
+        # distinguishable from "no data yet". After a link loss the last
+        # values stay visible, but the indicator above turns red.
         for label, key, fmt in self.fields:
-            if callable(fmt):
+            if not have_data:
+                label.config(text="--")
+            elif callable(fmt):
                 label.config(text=fmt(d[key]))
             else:
                 label.config(text=fmt.format(d[key]))
@@ -316,28 +353,12 @@ class Dashboard:
             )
 
             self.cmd_status.config(text=f"{label}: enabling RTS {rts_num}...")
-            self.root.after(2500, self.check_command)
+            self.root.after(0)
         except OSError as exc:
             self.cmd_status.config(text=f"{label} failed to send: {exc}")
 
     def start_mission(self):
         self.start_rts(MISSION_RTS, "Start Loaded Mission")
-
-    def check_command(self):
-        """Check whether MAVLINK_APP's command counter changed."""
-        with lock:
-            now = telemetry["command_counter"]
-
-        ok = now != self.count_before
-
-        if ok:
-            self.cmd_status.config(
-                text="SC ran the RTS and MAVLINK_APP got the command"
-            )
-        else:
-            self.cmd_status.config(
-                text="No command count change: check SC MID and cFS events"
-            )
 
     def gps_failure(self):
         """Enable and start RTS 4, which contains the GPS failure command."""
@@ -355,7 +376,10 @@ class Dashboard:
 
 def main():
     print("Enabling TO_LAB telemetry...")
-    enable_telemetry(TO_LAB_DEST_IP)
+    try:
+        enable_telemetry(TO_LAB_DEST_IP)
+    except OSError as exc:
+        print(f"Could not send TO_LAB enable command: {exc}")
 
     print(f"Listening on UDP {LISTEN_ADDR[0]}:{LISTEN_ADDR[1]}")
     threading.Thread(target=receive_loop, daemon=True).start()

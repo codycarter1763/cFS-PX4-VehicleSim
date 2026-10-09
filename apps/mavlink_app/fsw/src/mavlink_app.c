@@ -162,6 +162,16 @@ static void MAVLINK_APP_Rx(void)
                 {
                     mavlink_heartbeat_t heartbeat;
                     mavlink_msg_heartbeat_decode(&msg, &heartbeat);
+                    
+
+
+                    /* Only accept the flight controller's heartbeat */
+                    if (msg.sysid != 1 ||
+                        msg.compid != MAV_COMP_ID_AUTOPILOT1 ||
+                        heartbeat.autopilot != MAV_AUTOPILOT_PX4)
+                    {
+                        break;
+                    }
 
                     MAVLINK_APP_Data.ParseState.HeartbeatCount++;
                     MAVLINK_APP_Data.ParseState.Armed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) ? 1 : 0;
