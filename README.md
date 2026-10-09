@@ -27,24 +27,34 @@ For this project, cFS provides the command flight software side of the system, w
 | **SC** | Runs stored command sequences (RTS) when triggered. |
 
 # What is PX4 Autopilot and Gazebo?
+## PX4's Role in This Project
+<img width="30%" alt="PX4 Autopilot logo" src="https://github.com/user-attachments/assets/1daaf3ec-afe6-4d7e-bdcb-ff199b52d341" />
+<br/> 
+<br/>
 
 PX4 is an open-source autopilot software platform designed for autonomous vehicles with a very active community. It provides the flight-control software responsible for processing sensor data, estimating vehicle state, controlling vehicle motion, executing flight modes, and simulating the vehicle with a virtual flight computer.
-
-## PX4's Role in This Project
-PX4 serves as the simulated flight-control system, providing vehicle telemetry and processing commands exchanged with NASA cFS over MAVLink.
 
 The integration enables cFS to monitor selected flight data and initiate fault-injection scenarios, including GPS failure and restoration. These tests allow PX4's response to injected faults to be observed alongside cFS command execution and event reporting.
 
 PX4 retains responsibility for its own flight-control and failsafe behavior, while cFS provides an additional software integration and test framework.
 
-## What is Gazebo?
+## Gazebo Role inThis Project
+<img width="30%" alt="Gazebo simulation" src="https://github.com/user-attachments/assets/67d40374-1930-400c-9e09-7c6d428ce975" />
+<br/>
+<br/>
+
 In this project, PX4 Software-in-the-Loop can be used with Gazebo to simulate a vehicle while PX4 runs its flight-control software. This provides an accurate environment for observing flight behavior and testing the integration with NASA cFS.
 
 Gazebo's role is to simulate the vehicle and its environment, while PX4 runs the autopilot software that controls the simulated vehicle.
 
-## What is QGroundControl?
+# What is QGroundControl?
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/b0d610b2-f992-4c30-8dbb-58c4e8cce8ad" />
 
+<br/>
+<br/>
 QGroundControl is an open-source ground-control application for MAVLink-compatible vehicles. QGroundControl communicates with PX4 over MAVLink and provides visibility into the simulated vehicle's state and behavior. Its capabilities include:
+<br/>
+<br/>
 
 | Feature | Description |
 |---|---|
@@ -56,4 +66,71 @@ QGroundControl is an open-source ground-control application for MAVLink-compatib
 
 QGroundControl provides a ground-control interface for observing PX4 SITL and interacting with the simulated vehicle. It can be used to monitor the vehicle during fault-injection tests and observe relevant status changes.
 
-# 
+# How to Build and Run
+## Prerequisite
+In order to run the entire system, you will need to install the programs below, each has their respective installation instructions linked.
+
+- Core Flight System framework cloned from this repo
+- [PX4 Autopilot Software](https://docs.px4.io/main/en/dev_setup/building_px4)
+- [QGroundControl](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html) or a similar ground station
+- [Gazebo simulation software](https://gazebosim.org/docs/latest/getstarted/)
+
+## Building
+Once all the prereqs are installed, the only thing that will need to be built is this repository that contains Core Flight System. 
+
+``` bash
+make native_std.prep    # Sets up the build tree
+make native_std.install # Compiles the software and stages it to the exe directory
+```
+
+## Running
+Once cFS is built, you will be ready to boot up the demo.
+
+### Start PX4 SITL and Gazebo
+Open a separate terminal and navigate to your PX4-Autopilot source directory.
+
+``` bash
+cd ~/PX4-Autopilot
+```
+
+Then, you can choose a vehicle to model in PX4. In my case I used a quadcopter for the demo as shown below.
+``` bash
+make px4_sitl gz_x500
+```
+
+### Start QGroundControl
+Since I am running QGroundControl on Ubuntu 22.04, I build this from source. In my case, I used the command below to start QGroundControl, but feel free to use what your specific version requires.
+
+``` bash
+~/qgroundcontrol/build/Release/QGroundControl
+```
+
+Once this is running, make sure to enable **MAVLINK Mirror** on port **localhost:14540** in the telemetry menu so that all telemetry gets forwarded to cFS via Mavlink.
+
+### Start cFS
+To boot cFS, run the command below once built.
+
+``` bash
+cd build-native_std/exe/cpu1/
+./core-cpu1
+```
+
+Messasges should start populating your terminal now from PX4 and cFS.
+<br/>
+<br/>
+Included in this as well is a dashboard that connects to TO_LAB of cFS and displays simulation data as well as has command buttons to start an uploaded flight path and inject failure commands to see how the quadcopter reacts to signal losses.
+
+``` bash
+cd ~/cFS/tools/Mavlink_Test
+python3 mavlink_tolab_viewer.py
+```
+TO_LAB will automatically be enabled when the GUI starts up, so an external command is not needed to start receiving telemetry.
+<br/>
+<br/>
+**Note** Start Loaded Mission will only work if there is a flight plan loaded into the vehicle through PX4 and QGroundControl. 
+
+# Design Information
+Here, I wanted to document some design challenges I faced and context for the inner workings of the apps for anyone who wants to trace through my software.
+
+
+
