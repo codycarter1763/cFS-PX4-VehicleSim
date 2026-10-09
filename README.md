@@ -1,4 +1,12 @@
-<img width="1857" height="1059" alt="image" src="https://github.com/user-attachments/assets/b0ac6283-fe8b-44a2-bbd3-8781b98f5131" />
+
+
+
+https://github.com/user-attachments/assets/2fa3ce7b-194a-40c1-85f4-a32222d3e443
+
+
+
+
+
 
 # About
 This repository documents an embedded flight-software integration project demonstrating communication between NASA's Core Flight System (cFS), PX4 Autopilot Software, Gazebo, and QGroundControl with an autonomous quadcopter.
@@ -111,7 +119,7 @@ Once this is running, make sure to enable **MAVLINK Mirror** on port **localhost
 To boot cFS, run the command below once built.
 
 ``` bash
-cd build-native_std/exe/cpu1/
+cd ~/cFS/build-native_std/exe/cpu1/
 ./core-cpu1
 ```
 
