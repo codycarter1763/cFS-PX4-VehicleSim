@@ -1,3 +1,4 @@
+<img width="1857" height="1059" alt="image" src="https://github.com/user-attachments/assets/b0ac6283-fe8b-44a2-bbd3-8781b98f5131" />
 
 # About
 This repository documents an embedded flight-software integration project demonstrating communication between NASA's Core Flight System (cFS), PX4 Autopilot Software, Gazebo, and QGroundControl with an autonomous quadcopter.
