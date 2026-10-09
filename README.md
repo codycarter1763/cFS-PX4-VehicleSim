@@ -123,7 +123,7 @@ cd ~/cFS/build-native_std/exe/cpu1/
 ./core-cpu1
 ```
 
-Messasges should start populating your terminal now from PX4 and cFS.
+Messages should start populating your terminal now from PX4 and cFS.
 <br/>
 <br/>
 Included in this as well is a dashboard that connects to TO_LAB of cFS and displays simulation data as well as has command buttons to start an uploaded flight path and inject failure commands to see how the quadcopter reacts to signal losses.
