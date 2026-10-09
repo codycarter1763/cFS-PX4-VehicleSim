@@ -42,9 +42,18 @@
 #include "sc_msgids.h"       /* defines SC packet msg ID's */
 #include "sc_msg.h"          /* defines SC message structures */
 
-/* Checksum for each sample command */
-#ifndef SC_NOOP_CKSUM
-#define SC_NOOP_CKSUM (0x3E ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
+#include "mavlink_app_msgids.h" /* defines MAVLINK_APP packet msg ID's */
+#include "mavlink_app_fcncodes.h" /* defines MAVLINK_APP command code values */
+
+/*
+ * Command checksum = 0xFF ^ (XOR of the other command bytes).
+ * For an 8-byte command (no payload) the fixed bytes XOR to 0xC0 ^ 0x01 (sequence and
+ * length), plus the function code. With MAVLINK_APP_INJECT_GPS_FAILURE_CC = 5:
+ * 0xFF ^ 0xC0 ^ 0x01 ^ 0x05 = 0x3A. If the function code changes, recompute.
+ */
+#ifndef MAVLINK_INJECT_GPS_FAILURE_CKSUM
+#define MAVLINK_INJECT_GPS_FAILURE_CKSUM \
+    (0x3B ^ ((MAVLINK_APP_CMD_MID & 0xFF00) >> 8u) ^ (MAVLINK_APP_CMD_MID & 0x00FF))
 #endif
 
 /* Custom table structure, modify as needed to add desired commands */
@@ -52,10 +61,6 @@ typedef struct
 {
     SC_RtsEntryHeader_t hdr1;
     SC_NoopCmd_t        cmd1;
-    SC_RtsEntryHeader_t hdr2;
-    SC_NoopCmd_t        cmd2;
-    SC_RtsEntryHeader_t hdr3;
-    SC_NoopCmd_t        cmd3;
 } SC_RtsStruct004_t;
 
 /* Define the union to size the table correctly */
@@ -72,16 +77,9 @@ typedef union
 SC_RtsTable004_t SC_Rts004 = {
     /* 1 */
     .rts.hdr1.WakeupCount = 0,
-    .rts.cmd1             = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd1), SC_NOOP_CC, SC_NOOP_CKSUM) },
-
-    /* 2 */
-    .rts.hdr2.WakeupCount = 5,
-    .rts.cmd2             = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd2), SC_NOOP_CC, SC_NOOP_CKSUM) },
-
-    /* 3 */
-    .rts.hdr3.WakeupCount = 5,
-    .rts.cmd3             = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd3), SC_NOOP_CC, SC_NOOP_CKSUM) }
+    .rts.cmd1             = { CFE_MSG_CMD_HDR_INIT(MAVLINK_APP_CMD_MID, SC_MEMBER_SIZE(cmd1), MAVLINK_APP_INJECT_GPS_FAILURE_CC, MAVLINK_INJECT_GPS_FAILURE_CKSUM) },
 };
+
 
 /* Macro for table structure */
 CFE_TBL_FILEDEF(SC_Rts004, SC.RTS_TBL004, SC Example RTS_TBL004, sc_rts004.tbl)

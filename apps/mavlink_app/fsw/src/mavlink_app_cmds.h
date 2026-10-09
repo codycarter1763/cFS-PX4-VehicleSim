@@ -36,5 +36,7 @@ CFE_Status_t MAVLINK_APP_ResetCountersCmd(const MAVLINK_APP_ResetCountersCmd_t *
 CFE_Status_t MAVLINK_APP_ProcessCmd(const MAVLINK_APP_ProcessCmd_t *Msg);
 CFE_Status_t MAVLINK_APP_DisplayParamCmd(const MAVLINK_APP_DisplayParamCmd_t *Msg);
 CFE_Status_t MAVLINK_APP_StartMissionCmd(const MAVLINK_APP_StartMissionCmd_t *Msg);
+CFE_Status_t MAVLINK_APP_InjectGPSFailureCmd(const MAVLINK_APP_InjectGPSFailureCmd_t *Msg);
+CFE_Status_t MAVLINK_APP_RestoreGPSFailureCmd(const MAVLINK_APP_RestoreGPSFailureCmd_t *Msg);
 
 #endif /* MAVLINK_APP_CMDS_H */

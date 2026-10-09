@@ -225,3 +225,115 @@ CFE_Status_t MAVLINK_APP_StartMissionCmd(
 
     return CFE_SUCCESS;
 }
+
+CFE_Status_t MAVLINK_APP_InjectGPSFailureCmd(
+    const MAVLINK_APP_InjectGPSFailureCmd_t *Msg)
+{
+    mavlink_message_t MavMsg;
+    uint8 Buffer[MAVLINK_MAX_PACKET_LEN];
+    uint16 Length;
+    int32 Status;
+
+    (void)Msg;
+
+    mavlink_msg_command_long_pack(
+        1,  /* Source system */
+        200, /* Source component */
+        &MavMsg,
+        1,  /* Target PX4 system */
+        1,  /* Target autopilot component */
+        MAV_CMD_INJECT_FAILURE,
+        0,  /* Confirmation */
+        4,  /* GPS */
+        1,  /* OFF */
+        0,  /* All GPS instances */
+        0,
+        0,
+        0,
+        0
+        );
+
+    Length = mavlink_msg_to_send_buffer(Buffer, &MavMsg);
+
+    Status = OS_SocketSendTo(
+        MAVLINK_APP_Data.SockId,
+        Buffer,
+        Length,
+        &MAVLINK_APP_Data.Px4Addr);
+
+    if (Status < 0)
+    {
+        MAVLINK_APP_Data.CommandErrorCounter++;
+
+        CFE_EVS_SendEvent(MAVLINK_APP_INJECT_GPS_FAILURE_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "MAVLINK: Failed to send INJECT_GPS_FAILURE: %ld",
+                          (long)Status);
+
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+    }
+
+    MAVLINK_APP_Data.CommandCounter++;
+
+    CFE_EVS_SendEvent(MAVLINK_APP_INJECT_GPS_FAILURE_INF_EID,
+                      CFE_EVS_EventType_INFORMATION,
+                      "MAVLINK: INJECT_GPS_FAILURE sent to PX4");
+
+    return CFE_SUCCESS;
+}
+
+CFE_Status_t MAVLINK_APP_RestoreGPSFailureCmd(
+    const MAVLINK_APP_RestoreGPSFailureCmd_t *Msg)
+{
+    mavlink_message_t MavMsg;
+    uint8 Buffer[MAVLINK_MAX_PACKET_LEN];
+    uint16 Length;
+    int32 Status;
+
+    (void)Msg;
+
+    mavlink_msg_command_long_pack(
+        1,  /* Source system */
+        200, /* Source component */
+        &MavMsg,
+        1,  /* Target PX4 system */
+        1,  /* Target autopilot component */
+        MAV_CMD_INJECT_FAILURE,
+        0,  /* Confirmation */
+        4,  /* GPS */
+        0,  /* ON */
+        0,  /* All GPS instances */
+        0,
+        0,
+        0,
+        0
+        );
+
+    Length = mavlink_msg_to_send_buffer(Buffer, &MavMsg);
+
+    Status = OS_SocketSendTo(
+        MAVLINK_APP_Data.SockId,
+        Buffer,
+        Length,
+        &MAVLINK_APP_Data.Px4Addr);
+
+    if (Status < 0)
+    {
+        MAVLINK_APP_Data.CommandErrorCounter++;
+
+        CFE_EVS_SendEvent(MAVLINK_APP_RESTORE_GPS_FAILURE_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "MAVLINK: Failed to send RESTORE_GPS_FAILURE: %ld",
+                          (long)Status);
+
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
+    }
+
+    MAVLINK_APP_Data.CommandCounter++;
+
+    CFE_EVS_SendEvent(MAVLINK_APP_RESTORE_GPS_FAILURE_INF_EID,
+                      CFE_EVS_EventType_INFORMATION,
+                      "MAVLINK: RESTORE_GPS_FAILURE sent to PX4");
+
+    return CFE_SUCCESS;
+}

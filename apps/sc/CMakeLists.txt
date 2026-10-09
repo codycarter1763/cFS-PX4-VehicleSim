@@ -28,6 +28,7 @@ set(APP_TABLE_FILES
   fsw/tables/sc_rts002.c
   fsw/tables/sc_rts003.c
   fsw/tables/sc_rts004.c
+  fsw/tables/sc_rts005.c
 )
 
 add_cfe_tables(sc ${APP_TABLE_FILES})

@@ -71,6 +71,15 @@ typedef struct
     CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
 } MAVLINK_APP_StartMissionCmd_t;
 
+typedef struct
+{
+    CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
+} MAVLINK_APP_InjectGPSFailureCmd_t;
+
+typedef struct
+{
+    CFE_MSG_CommandHeader_t CommandHeader; /**< \brief Command header */
+} MAVLINK_APP_RestoreGPSFailureCmd_t;
 /*************************************************************************/
 /*
 ** Type definition (Mavlink App housekeeping)

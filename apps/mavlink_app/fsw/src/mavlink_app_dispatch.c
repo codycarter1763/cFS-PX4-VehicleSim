@@ -119,6 +119,20 @@ void MAVLINK_APP_ProcessGroundCommand(const CFE_SB_Buffer_t *SBBufPtr)
                 MAVLINK_APP_StartMissionCmd((const MAVLINK_APP_StartMissionCmd_t *)SBBufPtr);
             }
             break;
+
+        case MAVLINK_APP_INJECT_GPS_FAILURE_CC:
+            if (MAVLINK_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(MAVLINK_APP_InjectGPSFailureCmd_t)))
+            {
+                MAVLINK_APP_InjectGPSFailureCmd((const MAVLINK_APP_InjectGPSFailureCmd_t *)SBBufPtr);
+            }
+            break;
+        
+        case MAVLINK_APP_RESTORE_GPS_FAILURE_CC:
+            if (MAVLINK_APP_VerifyCmdLength(&SBBufPtr->Msg, sizeof(MAVLINK_APP_RestoreGPSFailureCmd_t)))
+            {
+                MAVLINK_APP_RestoreGPSFailureCmd((const MAVLINK_APP_RestoreGPSFailureCmd_t *)SBBufPtr);
+            }
+            break;
             
         default:
             CFE_EVS_SendEvent(MAVLINK_APP_CC_ERR_EID,

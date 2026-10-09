@@ -18,7 +18,7 @@
 
 /**
  * @file
- *   CFS Stored Command (SC) sample RTS table 003
+ *   CFS Stored Command (SC) sample RTS table 005
  *
  * The following source code demonstrates how to create a sample
  * Stored Command RTS table using the software defined command structures.
@@ -48,13 +48,14 @@
 /*
  * Command checksum = 0xFF ^ (XOR of the other command bytes).
  * For an 8-byte command (no payload) the fixed bytes XOR to 0xC0 ^ 0x01 (sequence and
- * length), plus the function code. With MAVLINK_APP_START_MISSION_CC = 4:
- * 0xFF ^ 0xC0 ^ 0x01 ^ 0x04 = 0x3A. If the function code changes, recompute.
+ * length), plus the function code. With MAVLINK_APP_INJECT_GPS_FAILURE_CC = 5:
+ * 0xFF ^ 0xC0 ^ 0x01 ^ 0x05 = 0x3A. If the function code changes, recompute.
  */
-#ifndef MAVLINK_START_MISSION_CKSUM
-#define MAVLINK_START_MISSION_CKSUM \
-    (0x3A ^ ((MAVLINK_APP_CMD_MID & 0xFF00) >> 8u) ^ (MAVLINK_APP_CMD_MID & 0x00FF))
+#ifndef MAVLINK_RESTORE_GPS_FAILURE_CKSUM
+#define MAVLINK_RESTORE_GPS_FAILURE_CKSUM \
+    (0x38 ^ ((MAVLINK_APP_CMD_MID & 0xFF00) >> 8u) ^ (MAVLINK_APP_CMD_MID & 0x00FF))
 #endif
+
 
 
 /* Custom table structure, modify as needed to add desired commands */
@@ -62,27 +63,27 @@ typedef struct
 {
     SC_RtsEntryHeader_t hdr1;
     SC_NoopCmd_t        cmd1;
-} SC_RtsStruct003_t;
+} SC_RtsStruct005_t;
 
 /* Define the union to size the table correctly */
 typedef union
 {
-    SC_RtsStruct003_t rts;
+    SC_RtsStruct005_t rts;
     uint16            buf[SC_RTS_BUFF_SIZE];
-} SC_RtsTable003_t;
+} SC_RtsTable005_t;
 
 /* Helper macro to get size of structure elements */
-#define SC_MEMBER_SIZE(member) (sizeof(((SC_RtsStruct003_t *)NULL)->member))
+#define SC_MEMBER_SIZE(member) (sizeof(((SC_RtsStruct005_t *)NULL)->member))
 
 /* Used designated initializers to be verbose, modify as needed/desired */
-SC_RtsTable003_t SC_Rts003 = {
+SC_RtsTable005_t SC_Rts005 = {
     /* 1 */
     .rts.hdr1.WakeupCount = 0,
-    .rts.cmd1             = { CFE_MSG_CMD_HDR_INIT(MAVLINK_APP_CMD_MID, SC_MEMBER_SIZE(cmd1), MAVLINK_APP_START_MISSION_CC, MAVLINK_START_MISSION_CKSUM) }
+    .rts.cmd1             = { CFE_MSG_CMD_HDR_INIT(MAVLINK_APP_CMD_MID, SC_MEMBER_SIZE(cmd1), MAVLINK_APP_RESTORE_GPS_FAILURE_CC, MAVLINK_RESTORE_GPS_FAILURE_CKSUM) }
 };
 
 /* Macro for table structure */
-CFE_TBL_FILEDEF(SC_Rts003, SC.RTS_TBL003, SC Example RTS_TBL003, sc_rts003.tbl)
+CFE_TBL_FILEDEF(SC_Rts005, SC.RTS_TBL005, SC Example RTS_TBL005, sc_rts005.tbl)
 
 /************************/
 /*  End of File Comment */

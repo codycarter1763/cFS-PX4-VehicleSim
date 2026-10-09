@@ -49,9 +49,17 @@
 #ifndef SC_ENABLE_RTS2_CKSUM
 #define SC_ENABLE_RTS2_CKSUM (0x3F ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
 #endif
-#ifndef SC_START_RTS2_CKSUM
-#define SC_START_RTS2_CKSUM (0x3C ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
+#ifndef SC_ENABLE_RTS3_CKSUM
+#define SC_ENABLE_RTS3_CKSUM (0x3D ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
 #endif
+#ifndef SC_ENABLE_RTS4_CKSUM
+#define SC_ENABLE_RTS4_CKSUM (0x3E ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
+#endif
+#ifndef SC_ENABLE_RTS5_CKSUM
+#define SC_ENABLE_RTS5_CKSUM (0x3F ^ ((SC_CMD_MID & 0xFF00) >> 8u) ^ ((SC_CMD_MID & 0x00FF)))
+#endif
+
+
 
 /* Custom table structure, modify as needed to add desired commands */
 typedef struct
@@ -61,7 +69,12 @@ typedef struct
     SC_RtsEntryHeader_t hdr2;
     SC_EnableRtsCmd_t   cmd2;
     SC_RtsEntryHeader_t hdr3;
-    SC_StartRtsCmd_t    cmd3;
+    SC_EnableRtsCmd_t    cmd3;
+    SC_RtsEntryHeader_t hdr4;
+    SC_EnableRtsCmd_t   cmd4;
+    SC_RtsEntryHeader_t hdr5;
+    SC_EnableRtsCmd_t    cmd5;
+
 } SC_RtsStruct001_t;
 
 /* Define the union to size the table correctly */
@@ -85,10 +98,24 @@ SC_RtsTable001_t SC_Rts001 = {
     .rts.cmd2 = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd2), SC_ENABLE_RTS_CC, SC_ENABLE_RTS2_CKSUM) },
     .rts.cmd2.Payload.RtsNum = SC_RTS_NUM_INITIALIZER(2),
 
+
     /* 3 */
     .rts.hdr3.WakeupCount = 5,
-    .rts.cmd3 = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd3), SC_START_RTS_CC, SC_START_RTS2_CKSUM) },
-    .rts.cmd3.Payload.RtsNum = SC_RTS_NUM_INITIALIZER(2)
+    .rts.cmd3 = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd3), SC_ENABLE_RTS_CC, SC_ENABLE_RTS3_CKSUM) },
+    .rts.cmd3.Payload.RtsNum = SC_RTS_NUM_INITIALIZER(3),
+
+
+    /* 4 */
+    .rts.hdr4.WakeupCount = 5,
+    .rts.cmd4 = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd4), SC_ENABLE_RTS_CC, SC_ENABLE_RTS4_CKSUM) },
+    .rts.cmd4.Payload.RtsNum = SC_RTS_NUM_INITIALIZER(4),
+
+
+    /* 5 */
+    .rts.hdr5.WakeupCount = 5,
+    .rts.cmd5 = { CFE_MSG_CMD_HDR_INIT(SC_CMD_MID, SC_MEMBER_SIZE(cmd5), SC_ENABLE_RTS_CC, SC_ENABLE_RTS5_CKSUM) },
+    .rts.cmd5.Payload.RtsNum = SC_RTS_NUM_INITIALIZER(5),
+
 };
 
 /* Macro for table structure */

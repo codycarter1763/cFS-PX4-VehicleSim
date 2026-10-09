@@ -72,7 +72,7 @@
  *       The RTS Info Table.
  */
 #define SC_NUMBER_OF_RTS                   SC_INTERFACE_CFGVAL(NUMBER_OF_RTS)
-#define DEFAULT_SC_INTERFACE_NUMBER_OF_RTS 4
+#define DEFAULT_SC_INTERFACE_NUMBER_OF_RTS 5
 
 /**
  * \brief Max number of commands in each ATS
