@@ -21,7 +21,7 @@ For this project, cFS provides the command flight software side of the system, w
 
 | App | Description |
 |---|---|
-| **MAVLINK_APP** | Reads CCSDS packets from ESP32 via serial. |
+| **MAVLINK_APP** | Reads PX4 SITL data and publishes it to the cFS Software Bus (SB). |
 | **TO_LAB** | Outlet for telemetry data from cFS to external applications. |
 | **CI_LAB** | Inlet for commands for cFS from external applications. |
 | **SC** | Runs stored command sequences (RTS) when triggered. |
@@ -38,7 +38,7 @@ The integration enables cFS to monitor selected flight data and initiate fault-i
 
 PX4 retains responsibility for its own flight-control and failsafe behavior, while cFS provides an additional software integration and test framework.
 
-## Gazebo Role inThis Project
+## Gazebo Role in This Project
 <img width="30%" alt="Gazebo simulation" src="https://github.com/user-attachments/assets/67d40374-1930-400c-9e09-7c6d428ce975" />
 <br/>
 <br/>
@@ -129,8 +129,9 @@ TO_LAB will automatically be enabled when the GUI starts up, so an external comm
 <br/>
 **Note** Start Loaded Mission will only work if there is a flight plan loaded into the vehicle through PX4 and QGroundControl. 
 
-# Design Information
-Here, I wanted to document some design challenges I faced and context for the inner workings of the apps for anyone who wants to trace through my software.
+# Conclusion
 
+While PX4 does not require NASA's Core Flight System (cFS) to operate, this project demonstrates how cFS can complement an existing autopilot by providing an additional framework for command sequencing, telemetry distribution, and fault-injection testing. Integrating cFS with PX4 SITL provided hands-on experience with flight-software architecture, MAVLink communication, real-time telemetry processing, and automated test sequences. 
 
+Feel free to clone the repository, experiment with the implementation, and add your own features! 
 
