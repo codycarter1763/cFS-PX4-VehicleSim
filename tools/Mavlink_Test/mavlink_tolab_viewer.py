@@ -26,18 +26,18 @@ GPS_FAILURE_RTS = 4                     # RTS table holding GPS failure command
 GPS_RESTORE_RTS = 5                     # RTS table holding GPS restore command
 
 # ---- Packet layouts (must match the C structs) ----------------------------
-HK_FMT = "<BBBBBBBbffI"                 # 20 bytes
+HK_FMT = "<BBBBBBBbffII"                 # 24 bytes
 HK_FIELDS = (
     "command_counter", "command_error_counter", "armed", "main_mode",
     "sub_mode", "gps_fix_type", "gps_satellites", "battery_remaining",
-    "battery_voltage", "battery_current", "heartbeat_count"
+    "battery_voltage", "battery_current", "heartbeat_count", "px4_boot_ms"
 )
 
-NAV_FMT = "<ffffffiiihhhH"              # 44 bytes
+NAV_FMT = "<ffffffiiihhhHI"              # 48 bytes
 NAV_FIELDS = (
     "roll", "pitch", "yaw", "roll_rate", "pitch_rate", "yaw_rate",
     "latitude", "longitude", "relative_altitude", "vx", "vy", "vz",
-    "heading"
+    "heading", "px4_boot_ms"
 )
 NAV_SCALE = {
     "latitude": 1e7,
@@ -149,7 +149,8 @@ SECTIONS = [
         ("Armed", "armed", _armed),
         ("Main Mode", "main_mode", "{}"),
         ("Sub Mode", "sub_mode", "{}"),
-        ("Heartbeats", "heartbeat_count", "{}")
+        ("Heartbeats", "heartbeat_count", "{}"),
+        ("PX4 Time", "px4_boot_ms", "{} ms")
     ]),
     ("GPS / Position", 0, 1, [
         ("Fix Type", "gps_fix_type", "{}"),
@@ -342,6 +343,7 @@ class Dashboard:
         """Enable the selected SC RTS, then start it after a short delay."""
         with lock:
             self.count_before = telemetry["command_counter"]
+            px4_ms = telemetry["px4_boot_ms"]
 
         payload = struct.pack("<HH", rts_num, 0)
         try:
@@ -352,7 +354,7 @@ class Dashboard:
                 lambda: send_cmd(SC_CMD_MID, SC_START_RTS_FC, payload)
             )
 
-            self.cmd_status.config(text=f"{label}: enabling RTS {rts_num}...")
+            self.cmd_status.config(text=f"{label}: enabling RTS {rts_num}...(px4_ms={px4_ms})")
             self.root.after(0)
         except OSError as exc:
             self.cmd_status.config(text=f"{label} failed to send: {exc}")

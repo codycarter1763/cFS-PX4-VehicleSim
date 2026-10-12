@@ -59,6 +59,7 @@ CFE_Status_t MAVLINK_APP_SendHkCmd(const MAVLINK_APP_SendHkCmd_t *Msg)
     */
     MAVLINK_APP_Data.HkTlm.Payload.CommandErrorCounter = MAVLINK_APP_Data.CommandErrorCounter;
     MAVLINK_APP_Data.HkTlm.Payload.CommandCounter      = MAVLINK_APP_Data.CommandCounter;
+    MAVLINK_APP_Data.HkTlm.Payload.PX4BootMs           = MAVLINK_APP_Data.PX4BootMs;
 
     /*
     ** Send housekeeping telemetry packet...
@@ -275,9 +276,7 @@ CFE_Status_t MAVLINK_APP_InjectGPSFailureCmd(
 
     MAVLINK_APP_Data.CommandCounter++;
 
-    CFE_EVS_SendEvent(MAVLINK_APP_INJECT_GPS_FAILURE_INF_EID,
-                      CFE_EVS_EventType_INFORMATION,
-                      "MAVLINK: INJECT_GPS_FAILURE sent to PX4");
+    CFE_EVS_SendEvent(MAVLINK_APP_INJECT_GPS_FAILURE_INF_EID, CFE_EVS_EventType_INFORMATION, "GPS_FAIL sent px4_ms=%lu", (unsigned long)MAVLINK_APP_Data.PX4BootMs);
 
     return CFE_SUCCESS;
 }
@@ -333,7 +332,7 @@ CFE_Status_t MAVLINK_APP_RestoreGPSFailureCmd(
 
     CFE_EVS_SendEvent(MAVLINK_APP_RESTORE_GPS_FAILURE_INF_EID,
                       CFE_EVS_EventType_INFORMATION,
-                      "MAVLINK: RESTORE_GPS_FAILURE sent to PX4");
+                      "GPS_RESTORE sent px4_ms=%lu", (unsigned long)MAVLINK_APP_Data.PX4BootMs);
 
     return CFE_SUCCESS;
 }

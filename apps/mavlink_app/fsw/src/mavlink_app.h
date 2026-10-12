@@ -67,6 +67,7 @@ typedef struct
     float  BatteryVoltage;
     float  BatteryCurrent;
     uint32 HeartbeatCount;
+    uint32 PX4BootMs;   /* latest time_boot_ms seen from PX4 */
 } MAVLINK_APP_HkTlm_Payload_t;
 
 typedef struct
@@ -78,7 +79,8 @@ typedef struct
     int32  RelativeAltitude;
     int16  VxCms, VyCms, VzCms;
     uint16 HeadingCDeg;
-} MAVLINK_APP_NavTlm_Payload_t;  /* 44 bytes */
+    uint32 PX4BootMs;   /* latest time_boot_ms seen from PX4 */
+} MAVLINK_APP_NavTlm_Payload_t;  /* 48 bytes */
 
 typedef struct
 {
@@ -125,7 +127,12 @@ typedef struct
     uint32          RxPacketCount;
     uint32          RxByteCount;
 
-    
+    uint32 PX4BootMs;   /* latest time_boot_ms seen from PX4 */
+    uint32 LastGpsFixMs; /* time of last GPS fix, in PX4 time_boot_ms */
+    uint8 GpsStale;  /* true if GPS has not been updated for a while */
+    uint8  PrevFixType;     /* 255 until the first GPS_RAW_INT */
+    uint8  PrevSats;        /* 255 until the first GPS_RAW_INT */
+    uint32 PrevCustomMode;  /* 0xFFFFFFFF until the first HEARTBEAT */
 } MAVLINK_APP_Data_t;
 
 /*
