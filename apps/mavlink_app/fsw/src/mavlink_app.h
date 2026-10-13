@@ -89,6 +89,26 @@ typedef struct
     char  Text[50];
 } MAVLINK_APP_Px4StatusText_Payload_t;
 
+typedef struct
+{
+    CFE_MSG_TelemetryHeader_t TelemetryHeader;
+    uint8 EventCode;
+    uint8 Arg8;
+    uint16 Arg16;
+    uint32 PX4BootMs;
+    uint32 Arg32;
+} MAVLINK_APP_TimelineTlm_t;
+
+#define TL_INJECT_SENT   1
+#define TL_RESTORE_SENT  2
+#define TL_MISSION_SENT  3
+#define TL_CMD_ACK       4
+#define TL_GPS_FIX       5
+#define TL_GPS_STALE     6
+#define TL_GPS_RESUME    7
+#define TL_MODE_CHANGE   8
+#define TL_STATUSTEXT    9
+
 #include "mavlink_app_msg.h"
 
 /*

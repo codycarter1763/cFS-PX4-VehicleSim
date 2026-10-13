@@ -188,6 +188,10 @@ static void MAVLINK_APP_Rx(void)
                       (unsigned)MAVLINK_APP_Data.ParseState.MainMode,
                       (unsigned)MAVLINK_APP_Data.ParseState.SubMode,
                       (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        MAVLINK_APP_PublishTimeline(TL_MODE_CHANGE,
+                                                    MAVLINK_APP_Data.ParseState.MainMode,
+                                                    MAVLINK_APP_Data.ParseState.SubMode,
+                                                    heartbeat.custom_mode);
                         MAVLINK_APP_Data.PrevCustomMode = heartbeat.custom_mode;
                     }
 
@@ -198,6 +202,7 @@ static void MAVLINK_APP_Rx(void)
                             CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
                                 "GPS_RAW_INT stale >2s px4_ms=%lu",
                                 (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                            MAVLINK_APP_PublishTimeline(TL_GPS_STALE, 0, 0, 0);
                         }
 
                     MAVLINK_APP_Data.HkTlm.Payload.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
@@ -266,21 +271,30 @@ static void MAVLINK_APP_Rx(void)
                     MAVLINK_APP_Data.HkTlm.Payload.GpsNumSatellites = gps_raw.satellites_visible;
 
                     MAVLINK_APP_Data.LastGpsFixMs = MAVLINK_APP_Data.PX4BootMs;
-if (MAVLINK_APP_Data.GpsStale)
-{
-    MAVLINK_APP_Data.GpsStale = 0;
-    CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
-                      "GPS_RAW_INT resumed px4_ms=%lu", (unsigned long)MAVLINK_APP_Data.PX4BootMs);
-}
-if (gps_raw.fix_type != MAVLINK_APP_Data.PrevFixType)
-{
-    CFE_EVS_SendEvent(MAVLINK_APP_GPS_FIX_INF_EID, CFE_EVS_EventType_INFORMATION,
-                      "GPS fix %u->%u sats=%u px4_ms=%lu",
-                      (unsigned)MAVLINK_APP_Data.PrevFixType, (unsigned)gps_raw.fix_type,
-                      (unsigned)gps_raw.satellites_visible, (unsigned long)MAVLINK_APP_Data.PX4BootMs);
-    MAVLINK_APP_Data.PrevFixType = gps_raw.fix_type;
-}
-MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
+
+                    if (MAVLINK_APP_Data.GpsStale)
+                    {
+                        MAVLINK_APP_Data.GpsStale = 0;
+                        CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                          "GPS_RAW_INT resumed px4_ms=%lu",
+                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        MAVLINK_APP_PublishTimeline(TL_GPS_RESUME, 0, 0, 0);
+                    }
+
+                    if (gps_raw.fix_type != MAVLINK_APP_Data.PrevFixType)
+                    {
+                        CFE_EVS_SendEvent(MAVLINK_APP_GPS_FIX_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                          "GPS fix %u->%u sats=%u px4_ms=%lu",
+                                          (unsigned)MAVLINK_APP_Data.PrevFixType, (unsigned)gps_raw.fix_type,
+                                          (unsigned)gps_raw.satellites_visible,
+                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        /* publish before PrevFixType is overwritten: Arg16 carries the old value */
+                        MAVLINK_APP_PublishTimeline(TL_GPS_FIX, gps_raw.fix_type,
+                                                    MAVLINK_APP_Data.PrevFixType,
+                                                    gps_raw.satellites_visible);
+                        MAVLINK_APP_Data.PrevFixType = gps_raw.fix_type;
+                    }
+                    MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
 
                     break;
                 }
@@ -315,8 +329,9 @@ MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
                         "PX4 STATUSTEXT: severity=%u text=[%s] px4_ms=%lu",
                         (unsigned int)MAVLINK_APP_Data.Px4StatusText.Severity, MAVLINK_APP_Data.Px4StatusText.Text,
                         (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                    MAVLINK_APP_PublishTimeline(TL_STATUSTEXT, statustext.severity, 0, 0);
 
-                        break;
+                    break;
                 }
 
                 case MAVLINK_MSG_ID_COMMAND_ACK:
@@ -324,12 +339,14 @@ MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
                     mavlink_command_ack_t command_ack;
                     mavlink_msg_command_ack_decode(&msg, &command_ack);
 
-                   if (command_ack.command == MAV_CMD_INJECT_FAILURE || command_ack.command == MAV_CMD_MISSION_START)
+                    if (command_ack.command == MAV_CMD_INJECT_FAILURE || command_ack.command == MAV_CMD_MISSION_START)
                     {
                         CFE_EVS_SendEvent(MAVLINK_APP_CMD_ACK_INF_EID, CFE_EVS_EventType_INFORMATION,
                           "ACK cmd=%u result=%u px4_ms=%lu",
                           (unsigned)command_ack.command, (unsigned)command_ack.result,
                           (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        MAVLINK_APP_PublishTimeline(TL_CMD_ACK, (uint8)command_ack.result,
+                                                    (uint16)command_ack.command, 0);
                     }
                     break;
                 }

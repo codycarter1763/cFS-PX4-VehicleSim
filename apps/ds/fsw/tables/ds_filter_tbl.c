@@ -43,7 +43,7 @@
 */
 #include "cfe_msgids.h"
 #include "ds_msgids.h"
-
+#include "mavlink_app_msgids.h"
 /* #include "ci_lab_msgids.h"  */
 /* #include "to_lab_msgids.h"  */
 
@@ -75,6 +75,8 @@
 
 #define FILE_CFE_APP_HK_PKTS  4
 #define FILE_CFE_APP_TLM_PKTS 5
+
+#define FILE_MAVLINK_TIMELINE 6
 
 /*
 ** Sample packet filter table data
@@ -134,7 +136,7 @@ DS_FilterTable_t DS_FilterTable = {
       { /* .MessageID = */ CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_LONG_EVENT_MSG_MID),
         /* .Filter    = */
         { /* File table index, filter type, N, X, O */
-          { FILE_ALL_EVENTS, DS_BY_COUNT, 1, 1, 0 },
+          { FILE_MAVLINK_TIMELINE, DS_BY_COUNT, 1, 1, 0 },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED } } },
@@ -195,18 +197,10 @@ DS_FilterTable_t DS_FilterTable = {
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED } } },
      /* Packet Index 014 */
-      { /* .MessageID = */ CFE_SB_MSGID_RESERVED,
+      { /* .MessageID = */ CFE_SB_MSGID_WRAP_VALUE(MAVLINK_APP_MISSION_TIMELINE_TLM_MID),
         /* .Filter    = */
         { /* File table index, filter type, N, X, O */
-          { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
-          { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
-          { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
-          { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED } } },
-     /* Packet Index 015 */
-      { /* .MessageID = */ CFE_SB_MSGID_RESERVED,
-        /* .Filter    = */
-        { /* File table index, filter type, N, X, O */
-          { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
+          {  FILE_MAVLINK_TIMELINE, DS_BY_COUNT, 1, 1, 0  },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED },
           { DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED, DS_UNUSED } } },

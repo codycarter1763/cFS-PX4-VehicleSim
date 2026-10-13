@@ -73,3 +73,19 @@ void MAVLINK_APP_GetCrc(const char *TableName)
         CFE_ES_WriteToSysLog("Mavlink App: CRC: 0x%08lX\n\n", (unsigned long)Crc);
     }
 }
+
+void MAVLINK_APP_PublishTimeline(uint8 code, uint8 a8, uint16 a16, uint32 a32)
+{
+    MAVLINK_APP_TimelineTlm_t pkt;
+
+    CFE_MSG_Init(CFE_MSG_PTR(pkt.TelemetryHeader),
+                 CFE_SB_ValueToMsgId(MAVLINK_APP_MISSION_TIMELINE_TLM_TOPICID), sizeof(pkt));
+    pkt.EventCode = code;
+    pkt.Arg8      = a8;
+    pkt.Arg16     = a16;
+    pkt.Arg32     = a32;
+    pkt.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
+
+    CFE_SB_TimeStampMsg(CFE_MSG_PTR(pkt.TelemetryHeader));
+    CFE_SB_TransmitMsg(CFE_MSG_PTR(pkt.TelemetryHeader), true);
+}

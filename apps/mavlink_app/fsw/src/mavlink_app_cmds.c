@@ -223,6 +223,8 @@ CFE_Status_t MAVLINK_APP_StartMissionCmd(
     CFE_EVS_SendEvent(MAVLINK_APP_START_MISSION_INF_EID,
                       CFE_EVS_EventType_INFORMATION,
                       "MAVLINK: MISSION_START sent to PX4");
+    
+    MAVLINK_APP_PublishTimeline(TL_MISSION_SENT, 0, 0, 0); 
 
     return CFE_SUCCESS;
 }
@@ -277,7 +279,7 @@ CFE_Status_t MAVLINK_APP_InjectGPSFailureCmd(
     MAVLINK_APP_Data.CommandCounter++;
 
     CFE_EVS_SendEvent(MAVLINK_APP_INJECT_GPS_FAILURE_INF_EID, CFE_EVS_EventType_INFORMATION, "GPS_FAIL sent px4_ms=%lu", (unsigned long)MAVLINK_APP_Data.PX4BootMs);
-
+    MAVLINK_APP_PublishTimeline(TL_INJECT_SENT,  0, 0, 0);
     return CFE_SUCCESS;
 }
 
@@ -333,6 +335,6 @@ CFE_Status_t MAVLINK_APP_RestoreGPSFailureCmd(
     CFE_EVS_SendEvent(MAVLINK_APP_RESTORE_GPS_FAILURE_INF_EID,
                       CFE_EVS_EventType_INFORMATION,
                       "GPS_RESTORE sent px4_ms=%lu", (unsigned long)MAVLINK_APP_Data.PX4BootMs);
-
+    MAVLINK_APP_PublishTimeline(TL_RESTORE_SENT,  0, 0, 0);
     return CFE_SUCCESS;
 }

@@ -31,5 +31,5 @@
 
 CFE_Status_t MAVLINK_APP_TblValidationFunc(void *TblData);
 void         MAVLINK_APP_GetCrc(const char *TableName);
-
+void MAVLINK_APP_PublishTimeline(uint8 code, uint8 a8, uint16 a16, uint32 a32);
 #endif /* MAVLINK_APP_UTILS_H */

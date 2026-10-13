@@ -64,6 +64,8 @@
 #define FILE_CFE_APP_HK_PKTS  4
 #define FILE_CFE_APP_TLM_PKTS 5
 
+#define FILE_MAVLINK_TIMELINE 6
+
 /*
 ** Sample Destination File Table Data
 */
@@ -146,16 +148,16 @@ DS_DestFileTable_t DS_DestFileTable = {
         }, /* File Index 06 */
         {
             /* .Movename      = */ DS_EMPTY_STRING,
-            /* .Pathname      = */ DS_EMPTY_STRING,
-            /* .Basename      = */ DS_EMPTY_STRING,
-            /* .Extension     = */ DS_EMPTY_STRING,
+            /* .Pathname      = */ "/cf",
+            /* .Basename      = */ "tline",
+            /* .Extension     = */ ".dat",
 
-            /* .FileNameType  = */ DS_UNUSED,
-            /* .EnableState   = */ DS_UNUSED,
-            /* .MaxFileSize   = */ DS_UNUSED,
-            /* .MaxFileAge    = */ DS_UNUSED,
-            /* .SequenceCount = */ DS_UNUSED,
-        }, /* File Index 07 */
+            /* .FileNameType  = */ DS_BY_COUNT,
+            /* .EnableState   = */ DS_ENABLED,
+            /* .MaxFileSize   = */ (1024 * 1024 * 2), /* 2 M-bytes */
+            /* .MaxFileAge    = */ (60 * 60),     /* 2 hours */
+            /* .SequenceCount = */ 6000,
+        },
         {
             /* .Movename      = */ DS_EMPTY_STRING,
             /* .Pathname      = */ DS_EMPTY_STRING,
@@ -167,7 +169,8 @@ DS_DestFileTable_t DS_DestFileTable = {
             /* .MaxFileSize   = */ DS_UNUSED,
             /* .MaxFileAge    = */ DS_UNUSED,
             /* .SequenceCount = */ DS_UNUSED,
-        }, /* File Index 08 */
+        }, 
+         /* File Index 08 */
         {
             /* .Movename      = */ DS_EMPTY_STRING,
             /* .Pathname      = */ DS_EMPTY_STRING,
