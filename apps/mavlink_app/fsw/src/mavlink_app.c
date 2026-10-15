@@ -182,12 +182,16 @@ static void MAVLINK_APP_Rx(void)
                     if (heartbeat.custom_mode != MAVLINK_APP_Data.PrevCustomMode)
                     {
                     CFE_EVS_SendEvent(MAVLINK_APP_MODE_CHG_INF_EID, CFE_EVS_EventType_INFORMATION,
-                      "MODE 0x%08lX->0x%08lX main=%u sub=%u px4_ms=%lu",
+                      "MODE 0x%08lX->0x%08lX main=%u sub=%u px4_time = %lu:%02lu:%02lu.%03lu",
                       (unsigned long)MAVLINK_APP_Data.PrevCustomMode,
                       (unsigned long)heartbeat.custom_mode,
                       (unsigned)MAVLINK_APP_Data.ParseState.MainMode,
                       (unsigned)MAVLINK_APP_Data.ParseState.SubMode,
-                      (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                      (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+
                         MAVLINK_APP_PublishTimeline(TL_MODE_CHANGE,
                                                     MAVLINK_APP_Data.ParseState.MainMode,
                                                     MAVLINK_APP_Data.ParseState.SubMode,
@@ -200,8 +204,11 @@ static void MAVLINK_APP_Rx(void)
                         {
                             MAVLINK_APP_Data.GpsStale = 1;
                             CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                "GPS_RAW_INT stale >2s px4_ms=%lu",
-                                (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                                "GPS_RAW_INT stale >2s px4_time = %lu:%02lu:%02lu.%03lu",
+                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                                (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
                             MAVLINK_APP_PublishTimeline(TL_GPS_STALE, 0, 0, 0);
                         }
 
@@ -276,18 +283,25 @@ static void MAVLINK_APP_Rx(void)
                     {
                         MAVLINK_APP_Data.GpsStale = 0;
                         CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                          "GPS_RAW_INT resumed px4_ms=%lu",
-                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                                          "GPS_RAW_INT resumed px4_time = %lu:%02lu:%02lu.%03lu",
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
                         MAVLINK_APP_PublishTimeline(TL_GPS_RESUME, 0, 0, 0);
                     }
 
                     if (gps_raw.fix_type != MAVLINK_APP_Data.PrevFixType)
                     {
                         CFE_EVS_SendEvent(MAVLINK_APP_GPS_FIX_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                          "GPS fix %u->%u sats=%u px4_ms=%lu",
+                                          "GPS fix %u->%u sats=%u px4_time = %lu:%02lu:%02lu.%03lu",
                                           (unsigned)MAVLINK_APP_Data.PrevFixType, (unsigned)gps_raw.fix_type,
                                           (unsigned)gps_raw.satellites_visible,
-                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+
                         /* publish before PrevFixType is overwritten: Arg16 carries the old value */
                         MAVLINK_APP_PublishTimeline(TL_GPS_FIX, gps_raw.fix_type,
                                                     MAVLINK_APP_Data.PrevFixType,
@@ -326,9 +340,13 @@ static void MAVLINK_APP_Rx(void)
                     CFE_EVS_SendEvent(
                         MAVLINK_APP_PX4_STATUSTEXT_EID,
                         CFE_EVS_EventType_INFORMATION,
-                        "PX4 STATUSTEXT: severity=%u text=[%s] px4_ms=%lu",
+                        "PX4 STATUSTEXT: severity=%u text=[%s] px4_time = %lu:%02lu:%02lu.%03lu",
                         (unsigned int)MAVLINK_APP_Data.Px4StatusText.Severity, MAVLINK_APP_Data.Px4StatusText.Text,
-                        (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                        (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+
                     MAVLINK_APP_PublishTimeline(TL_STATUSTEXT, statustext.severity, 0, 0);
 
                     break;
@@ -342,9 +360,12 @@ static void MAVLINK_APP_Rx(void)
                     if (command_ack.command == MAV_CMD_INJECT_FAILURE || command_ack.command == MAV_CMD_MISSION_START)
                     {
                         CFE_EVS_SendEvent(MAVLINK_APP_CMD_ACK_INF_EID, CFE_EVS_EventType_INFORMATION,
-                          "ACK cmd=%u result=%u px4_ms=%lu",
+                          "ACK cmd=%u result=%u px4_time = %lu:%02lu:%02lu.%03lu",
                           (unsigned)command_ack.command, (unsigned)command_ack.result,
-                          (unsigned long)MAVLINK_APP_Data.PX4BootMs);
+                        (unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u * 60u),
+                        ((unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u)) % 60u,
+                        ((unsigned long)MAVLINK_APP_Data.PX4BootMs / 1000u) % 60u,
+                        (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
                         MAVLINK_APP_PublishTimeline(TL_CMD_ACK, (uint8)command_ack.result,
                                                     (uint16)command_ack.command, 0);
                     }

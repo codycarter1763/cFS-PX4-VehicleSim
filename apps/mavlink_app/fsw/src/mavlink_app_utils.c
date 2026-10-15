@@ -79,7 +79,7 @@ void MAVLINK_APP_PublishTimeline(uint8 code, uint8 a8, uint16 a16, uint32 a32)
     MAVLINK_APP_TimelineTlm_t pkt;
 
     CFE_MSG_Init(CFE_MSG_PTR(pkt.TelemetryHeader),
-                 CFE_SB_ValueToMsgId(MAVLINK_APP_MISSION_TIMELINE_TLM_TOPICID), sizeof(pkt));
+                 CFE_SB_ValueToMsgId(MAVLINK_APP_MISSION_TIMELINE_TLM_MID), sizeof(pkt));
     pkt.EventCode = code;
     pkt.Arg8      = a8;
     pkt.Arg16     = a16;

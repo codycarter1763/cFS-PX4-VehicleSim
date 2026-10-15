@@ -143,6 +143,11 @@ def receive_loop():
 def _armed(v):
     return "ARMED" if v else "DISARMED"
 
+def section_px4_time(ms):
+    h, rem = divmod(int(ms), 3600000)
+    m, rem = divmod(rem, 60000)
+    s, msec = divmod(rem, 1000)
+    return f"{h}:{m:02d}:{s:02d}.{msec:03d}"
 
 SECTIONS = [
     ("Flight Status", 0, 0, [
@@ -150,7 +155,7 @@ SECTIONS = [
         ("Main Mode", "main_mode", "{}"),
         ("Sub Mode", "sub_mode", "{}"),
         ("Heartbeats", "heartbeat_count", "{}"),
-        ("PX4 Time", "px4_boot_ms", "{} ms")
+        ("PX4 Time", "px4_boot_ms", section_px4_time)
     ]),
     ("GPS / Position", 0, 1, [
         ("Fix Type", "gps_fix_type", "{}"),
@@ -354,7 +359,7 @@ class Dashboard:
                 lambda: send_cmd(SC_CMD_MID, SC_START_RTS_FC, payload)
             )
 
-            self.cmd_status.config(text=f"{label}: enabling RTS {rts_num}...(px4_ms={px4_ms})")
+            self.cmd_status.config(text=f"{label}: enabling RTS {rts_num}... "f"(px4_time = {px4_ms // (1000 * 60 * 60)}:{px4_ms // (1000 * 60) % 60:02d}:{px4_ms // 1000 % 60:02d}.{px4_ms % 1000:03d})")
             self.root.after(0)
         except OSError as exc:
             self.cmd_status.config(text=f"{label} failed to send: {exc}")
