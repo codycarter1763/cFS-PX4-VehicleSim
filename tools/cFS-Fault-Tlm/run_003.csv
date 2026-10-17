@@ -1,0 +1,107 @@
+from_cfs_injection_ms,since_anchor_ms,px4_time,px4_ms,side,estimated,stage,role,signal,old,new,event
+-494,-510,00:00:49.298,49298,cFS,1,SC_TRIGGER,command,,,,SC 82: Enabled RTS 004
+0,-16,00:00:49.792,49792,cFS,0,INJECT_CMD,command,,,,MAVLINK_APP 18: GPS_FAIL sent
+0,-16,00:00:49.792,49792,cFS,0,INJECT_CMD,command,,,,INJECT_SENT a8=0 a16=0 a32=0
+0,-16,00:00:49.792,49792,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 22: ACK cmd=420 result=0
+0,-16,00:00:49.792,49792,cFS,0,INJECT_ACK,ack,,,,CMD_ACK a8=0 a16=420 a32=0
+8,-8,00:00:49.800,49800,PX4,0,LAST_GPS_SAMPLE,sensor,vehicle_gnss.samples,streaming,stopped,vehicle_gnss last sample before 12012 ms gap
+16,0,00:00:49.808,49808,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 22: ACK cmd=420 result=0
+16,0,00:00:49.808,49808,cFS,0,INJECT_ACK,ack,,,,CMD_ACK a8=0 a16=420 a32=0
+16,0,00:00:49.808,49808,cFS,0,CFS_OBSERVES,observation,,,,"MAVLINK_APP 15: PX4 STATUSTEXT: severity=4 text=[Injected: gps off, all instances]"
+16,0,00:00:49.808,49808,cFS,0,CFS_OBSERVES,observation,,,,STATUSTEXT a8=4 a16=0 a32=0
+16,0,00:00:49.808,49808,PX4,0,PX4_INJECTED,fault applied,,,,"PX4 log [WARN] [failure_injection_manager] Injected: gps off, all instances"
+1008,992,00:00:50.800,50800,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 23: GPS fix 3->0 sats=255
+1008,992,00:00:50.800,50800,cFS,0,CFS_OBSERVES,observation,,,,GPS_FIX a8=0 a16=3 a32=255
+1008,992,00:00:50.800,50800,PX4,0,EKF_AIDING_LOSS,estimator,estimator_status_flags.cs_gps_hgt,1,0,estimator_status_flags.cs_gps_hgt 1 -> 0
+1048,1032,00:00:50.840,50840,PX4,0,EKF_AIDING_LOSS,estimator,estimator_status_flags.cs_inertial_dead_reckoning,0,1,estimator_status_flags.cs_inertial_dead_reckoning 0 -> 1
+5048,5032,00:00:54.840,54840,PX4,0,,,,,,PX4 log [WARN] [mc_pos_control] invalid setpoints
+5048,5032,00:00:54.840,54840,PX4,0,FAILSAFE_DECISION,decision,,,,PX4 log [WARN] [mc_pos_control] Failsafe: blind land
+5088,5072,00:00:54.880,54880,PX4,0,FAILSAFE_DECISION,decision,failsafe_flags.local_position_invalid,0,1,failsafe_flags.local_position_invalid 0 -> 1
+5088,5072,00:00:54.880,54880,PX4,0,FAILSAFE_DECISION,decision,failsafe_flags.local_position_invalid_relaxed,0,1,failsafe_flags.local_position_invalid_relaxed 0 -> 1
+5088,5072,00:00:54.880,54880,PX4,0,FAILSAFE_DECISION,decision,failsafe_flags.local_velocity_invalid,0,1,failsafe_flags.local_velocity_invalid 0 -> 1
+5088,5072,00:00:54.880,54880,PX4,0,FAILSAFE_DECISION,decision,failsafe_flags.global_position_invalid,0,1,failsafe_flags.global_position_invalid 0 -> 1
+5088,5072,00:00:54.880,54880,PX4,0,FAILSAFE_DECISION,decision,failsafe_flags.global_position_invalid_relaxed,0,1,failsafe_flags.global_position_invalid_relaxed 0 -> 1
+5096,5080,00:00:54.888,54888,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=2 text=[Failsafe activated]
+5096,5080,00:00:54.888,54888,cFS,0,CFS_OBSERVES,observation,,,,STATUSTEXT a8=2 a16=0 a32=0
+5100,5084,00:00:54.892,54892,PX4,0,FAILSAFE_ACTION,action,vehicle_status.nav_state,AUTO_MISSION,DESCEND,nav_state AUTO_MISSION -> DESCEND
+5100,5084,00:00:54.892,54892,PX4,0,FAILSAFE_ACTION,action,vehicle_status.failsafe,0,1,vehicle_status.failsafe 0 -> 1
+5100,5084,00:00:54.892,54892,PX4,0,FAILSAFE_DECISION,decision,,,,PX4 log [WARN] [failsafe] Failsafe activated
+5100,5084,00:00:54.892,54892,PX4,0,,,,,,PX4 log [INFO] [tone_alarm] battery warning (fast)
+5240,5224,00:00:55.032,55032,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 25: MODE 0x04040000->0x14040000 main=4 sub=20
+5240,5224,00:00:55.032,55032,cFS,0,CFS_OBSERVES,observation,,,,MODE_CHANGE a8=4 a16=20 a32=335806464
+5528,5512,00:00:55.320,55320,PX4,0,,,estimator_status_flags.cs_gnd_effect,0,1,estimator_status_flags.cs_gnd_effect 0 -> 1
+7016,7000,00:00:56.808,56808,PX4,0,EKF_AIDING_LOSS,estimator,estimator_status_flags.cs_gnss_pos,1,0,estimator_status_flags.cs_gnss_pos 1 -> 0
+7016,7000,00:00:56.808,56808,PX4,0,,,estimator_status_flags.cs_gravity_vector,0,1,estimator_status_flags.cs_gravity_vector 0 -> 1
+7016,7000,00:00:56.808,56808,PX4,0,EKF_AIDING_LOSS,estimator,estimator_status_flags.cs_gnss_vel,1,0,estimator_status_flags.cs_gnss_vel 1 -> 0
+7064,7048,00:00:56.856,56856,PX4,0,,,estimator_status_flags.cs_mag_dec,0,1,estimator_status_flags.cs_mag_dec 0 -> 1
+11003,10987,00:01:00.795,60795,cFS,1,SC_TRIGGER,command,,,,SC 82: Enabled RTS 005
+12012,-4,00:01:01.804,61804,cFS,0,RESTORE_CMD,command,,,,MAVLINK_APP 20: GPS_RESTORE sent
+12012,-4,00:01:01.804,61804,cFS,0,RESTORE_CMD,command,,,,RESTORE_SENT a8=0 a16=0 a32=0
+12012,-4,00:01:01.804,61804,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 22: ACK cmd=420 result=0
+12012,-4,00:01:01.804,61804,cFS,0,RESTORE_ACK,ack,,,,CMD_ACK a8=0 a16=420 a32=0
+12012,-4,00:01:01.804,61804,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 22: ACK cmd=420 result=0
+12012,-4,00:01:01.804,61804,cFS,0,RESTORE_ACK,ack,,,,CMD_ACK a8=0 a16=420 a32=0
+12012,-4,00:01:01.804,61804,cFS,0,CFS_OBSERVES,observation,,,,"MAVLINK_APP 15: PX4 STATUSTEXT: severity=4 text=[Cleared: gps, all instances]"
+12012,-4,00:01:01.804,61804,cFS,0,CFS_OBSERVES,observation,,,,STATUSTEXT a8=4 a16=0 a32=0
+12016,0,00:01:01.808,61808,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 23: GPS fix 0->3 sats=10
+12016,0,00:01:01.808,61808,cFS,0,CFS_OBSERVES,observation,,,,GPS_FIX a8=3 a16=0 a32=10
+12016,0,00:01:01.808,61808,PX4,0,PX4_CLEARED,fault removed,,,,"PX4 log [WARN] [failure_injection_manager] Cleared: gps, all instances"
+12020,4,00:01:01.812,61812,PX4,0,GPS_RESUMED,sensor,vehicle_gnss.samples,stopped,streaming,vehicle_gnss samples resume after 12012 ms gap
+12064,48,00:01:01.856,61856,PX4,0,EKF_REAIDING,estimator,estimator_aid_src_gnss_pos.fused,1,0,ekf gnss_pos fused 1 -> 0
+13088,1072,00:01:02.880,62880,PX4,0,EKF_REAIDING,estimator,estimator_aid_src_gnss_pos.fused,0,1,ekf gnss_pos fused 0 -> 1
+13088,1072,00:01:02.880,62880,PX4,0,EKF_REAIDING,estimator,estimator_status_flags.cs_gnss_pos,0,1,estimator_status_flags.cs_gnss_pos 0 -> 1
+13088,1072,00:01:02.880,62880,PX4,0,EKF_REAIDING,estimator,estimator_status_flags.cs_gps_hgt,0,1,estimator_status_flags.cs_gps_hgt 0 -> 1
+13088,1072,00:01:02.880,62880,PX4,0,EKF_REAIDING,estimator,estimator_status_flags.cs_inertial_dead_reckoning,1,0,estimator_status_flags.cs_inertial_dead_reckoning 1 -> 0
+13088,1072,00:01:02.880,62880,PX4,0,,,estimator_status_flags.cs_gravity_vector,1,0,estimator_status_flags.cs_gravity_vector 1 -> 0
+13088,1072,00:01:02.880,62880,PX4,0,EKF_REAIDING,estimator,estimator_status_flags.cs_gnss_vel,0,1,estimator_status_flags.cs_gnss_vel 0 -> 1
+13152,1136,00:01:02.944,62944,PX4,0,,,estimator_status_flags.cs_mag_dec,1,0,estimator_status_flags.cs_mag_dec 1 -> 0
+14164,2148,00:01:03.956,63956,PX4,0,FAILSAFE_CLEARED,decision,failsafe_flags.local_position_invalid,1,0,failsafe_flags.local_position_invalid 1 -> 0
+14164,2148,00:01:03.956,63956,PX4,0,FAILSAFE_CLEARED,decision,failsafe_flags.local_position_invalid_relaxed,1,0,failsafe_flags.local_position_invalid_relaxed 1 -> 0
+14164,2148,00:01:03.956,63956,PX4,0,FAILSAFE_CLEARED,decision,failsafe_flags.local_velocity_invalid,1,0,failsafe_flags.local_velocity_invalid 1 -> 0
+14164,2148,00:01:03.956,63956,PX4,0,FAILSAFE_CLEARED,decision,failsafe_flags.global_position_invalid,1,0,failsafe_flags.global_position_invalid 1 -> 0
+14164,2148,00:01:03.956,63956,PX4,0,FAILSAFE_CLEARED,decision,failsafe_flags.global_position_invalid_relaxed,1,0,failsafe_flags.global_position_invalid_relaxed 1 -> 0
+14172,2156,00:01:03.964,63964,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Executing Mission]
+14172,2156,00:01:03.964,63964,cFS,0,CFS_OBSERVES,observation,,,,STATUSTEXT a8=6 a16=0 a32=0
+14176,2160,00:01:03.968,63968,PX4,0,MODE_RECOVERED,action,vehicle_status.nav_state,DESCEND,AUTO_MISSION,nav_state DESCEND -> AUTO_MISSION
+14176,2160,00:01:03.968,63968,PX4,0,FAILSAFE_CLEARED,action,vehicle_status.failsafe,1,0,vehicle_status.failsafe 1 -> 0
+14176,2160,00:01:03.968,63968,PX4,0,,,,,,PX4 log [INFO] [navigator] Executing Mission
+14176,2160,00:01:03.968,63968,PX4,0,,,,,,PX4 log [INFO] [navigator] Climb to 50.0 meters above home
+14224,2208,00:01:04.016,64016,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Climb to 50.0 meters above home]
+14224,2208,00:01:04.016,64016,cFS,0,CFS_OBSERVES,observation,,,,STATUSTEXT a8=6 a16=0 a32=0
+14240,2224,00:01:04.032,64032,cFS,0,CFS_OBSERVES,observation,,,,MAVLINK_APP 25: MODE 0x14040000->0x04040000 main=4 sub=4
+14240,2224,00:01:04.032,64032,cFS,0,CFS_OBSERVES,observation,,,,MODE_CHANGE a8=4 a16=4 a32=67371008
+24336,12320,00:01:14.128,74128,PX4,0,,,estimator_status_flags.cs_gnd_effect,1,0,estimator_status_flags.cs_gnd_effect 1 -> 0
+95060,83044,00:02:24.852,144852,cFS,0,,,,,,"MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Mission finished, loitering]"
+95060,83044,00:02:24.852,144852,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+95068,83052,00:02:24.860,144860,PX4,0,,,,,,"PX4 log [INFO] [navigator] Mission finished, loitering"
+95080,83064,00:02:24.872,144872,PX4,0,,,vehicle_status.nav_state,AUTO_MISSION,AUTO_LOITER,nav_state AUTO_MISSION -> AUTO_LOITER
+95080,83064,00:02:24.872,144872,PX4,0,,,,,,PX4 log [INFO] [commander] Switching to Return
+95092,83076,00:02:24.884,144884,PX4,0,,,vehicle_status.nav_state,AUTO_LOITER,AUTO_RTL,nav_state AUTO_LOITER -> AUTO_RTL
+95092,83076,00:02:24.884,144884,PX4,0,,,,,,PX4 log [INFO] [navigator] Return: start return at 539 m (50 m above destination)
+95116,83100,00:02:24.908,144908,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Switching to Return]
+95116,83100,00:02:24.908,144908,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+95164,83148,00:02:24.956,144956,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Return: start return at 539 m (50 m above destina]
+95164,83148,00:02:24.956,144956,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+95164,83148,00:02:24.956,144956,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[ion)]
+95164,83148,00:02:24.956,144956,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+95244,83228,00:02:25.036,145036,cFS,0,,,,,,MAVLINK_APP 25: MODE 0x04040000->0x05040000 main=4 sub=5
+95244,83228,00:02:25.036,145036,cFS,0,,,,,,MODE_CHANGE a8=4 a16=5 a32=84148224
+112136,100120,00:02:41.928,161928,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Return: land at destination]
+112136,100120,00:02:41.928,161928,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+112140,100124,00:02:41.932,161932,PX4,0,,,,,,PX4 log [INFO] [navigator] Return: land at destination
+114780,102764,00:02:44.572,164572,PX4,0,,,estimator_status_flags.cs_gnd_effect,0,1,estimator_status_flags.cs_gnd_effect 0 -> 1
+152560,140544,00:03:22.352,202352,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Landing detected]
+152560,140544,00:03:22.352,202352,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+152568,140552,00:03:22.360,202360,PX4,0,,,,,,PX4 log [INFO] [commander] Landing detected
+152712,140696,00:03:22.504,202504,PX4,0,,,estimator_status_flags.cs_in_air,1,0,estimator_status_flags.cs_in_air 1 -> 0
+152712,140696,00:03:22.504,202504,PX4,0,,,estimator_status_flags.cs_gnd_effect,1,0,estimator_status_flags.cs_gnd_effect 1 -> 0
+152712,140696,00:03:22.504,202504,PX4,0,,,estimator_status_flags.cs_vehicle_at_rest,0,1,estimator_status_flags.cs_vehicle_at_rest 0 -> 1
+152728,140712,00:03:22.520,202520,PX4,0,,,estimator_status_flags.cs_mag_dec,0,1,estimator_status_flags.cs_mag_dec 0 -> 1
+154572,142556,00:03:24.364,204364,cFS,0,,,,,,MAVLINK_APP 15: PX4 STATUSTEXT: severity=6 text=[Disarmed by landing]
+154572,142556,00:03:24.364,204364,cFS,0,,,,,,STATUSTEXT a8=6 a16=0 a32=0
+154572,142556,00:03:24.364,204364,PX4,0,,,vehicle_status.nav_state,AUTO_RTL,AUTO_LOITER,nav_state AUTO_RTL -> AUTO_LOITER
+154572,142556,00:03:24.364,204364,PX4,0,,,vehicle_status.arming_state,ARMED,DISARMED,arming ARMED -> DISARMED
+154572,142556,00:03:24.364,204364,PX4,0,,,,,,PX4 log [INFO] [commander] Disarmed by landing
+154572,142556,00:03:24.364,204364,PX4,0,,,,,,PX4 log [INFO] [tone_alarm] notify neutral
+155032,143016,00:03:24.824,204824,cFS,0,,,,,,MAVLINK_APP 25: MODE 0x05040000->0x03040000 main=4 sub=3
+155032,143016,00:03:24.824,204824,cFS,0,,,,,,MODE_CHANGE a8=4 a16=3 a32=50593792
