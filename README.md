@@ -179,7 +179,7 @@ Output files are numbered (`run_001.json`, `run_002.json`, ...) so a new run nev
 The tool prints:
 - **Timeline:** every cFS and PX4 event in the window, in PX4 time order.
 - **Causal sequence:** the fault phase and the restore phase as stage-by-stage tables, with the first observable divergence and the last good GPS sample marked.
-- **PX4 parameters** that explain the behavior (`EKF2_NOAID_TOUT`, `EKF2_GPS_CTRL`, `SYS_FAILURE_EN`, `NAV_RCL_ACT`, `COM_ARM_WO_GPS`).
+- **PX4 parameters** that explain the behavior.
 - **Stage summary:** the first occurrence of each stage with the gap from the previous one.
 
 ### JSON file
