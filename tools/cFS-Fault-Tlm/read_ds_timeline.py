@@ -2,10 +2,9 @@
 """
 Read cFS Data Storage (DS) files and print a fault-propagation timeline.
 
-Reads:
-    Timeline packets (MID 0x08B7)
-    EVS long-event packets (MID 0x0808)
+Reads timeline packets (MID 0x08B7) and EVS long-event packets (MID 0x0808)
 
+This script is meant to be called by the merge_timeline tool, but it can also be run directly from the command line.
 Usage:
     python3 read_ds_timeline.py ~/cFS/build-native_std/exe/cpu1/cf/tline*.dat
     python3 read_ds_timeline.py ~/cFS/build-native_std/exe/cpu1/cf/tline*.dat --csv timeline.csv
@@ -14,7 +13,7 @@ Usage:
 Time columns:
     d_px4_ms: Time since injection using the PX4 boot clock.
     d_cfe_ms: Time since injection using the cFE packet timestamp.
-    px4_time: PX4 boot time formatted as HH:MM:SS.mmm.
+    px4_time: PX4 boot time formatted as HH:MM:SS.mmm for readbility.
 
 The injection point is the first INJECT_SENT timeline packet or
 GPS_FAIL sent EVS event.
@@ -54,10 +53,10 @@ PX4_TIME_PATTERN = re.compile(
     r"\s*px4_time\s*=\s*(\d+):(\d+):(\d+)\.(\d+)"
 )
 
-
+"""
+Convert PX4 boot milliseconds to HH:MM:SS.mmm.
+"""
 def format_px4_time(milliseconds):
-    """Convert PX4 boot milliseconds to HH:MM:SS.mmm."""
-
     if milliseconds is None:
         return ""
 
@@ -73,14 +72,12 @@ def format_px4_time(milliseconds):
     )
 
 
+"""
+Walk through consecutive CCSDS packets in .dat file.
+
+Returns None if the data does not form a valid packet sequence.
+"""
 def find_ccsds_packets(data, start_offset):
-    """
-    Walk through consecutive CCSDS packets.
-
-    Returns a list of (offset, packet_length) tuples.
-    Returns None if the data does not form a valid packet sequence.
-    """
-
     packets = []
     offset = start_offset
 
@@ -112,20 +109,17 @@ def find_ccsds_packets(data, start_offset):
 
     return packets if packets else None
 
+"""
+Extract the PX4 timestamp from an EVS message.
 
+Supported formats:
+    px4_ms=80636
+    px4_ms=80636 (00:01:20.636)
+    px4_time = 0:01:20.636
+
+Returns (timestamp_ms, cleaned_message)
+"""
 def extract_px4_timestamp(message):
-    """
-    Extract the PX4 timestamp from an EVS message.
-
-    Supported formats:
-        px4_ms=80636
-        px4_ms=80636 (00:01:20.636)
-        px4_time = 0:01:20.636
-
-    Returns:
-        (timestamp_ms, cleaned_message)
-    """
-
     timestamp_ms = None
 
     match = PX4_MS_PATTERN.search(message)
@@ -156,9 +150,11 @@ def extract_px4_timestamp(message):
     return timestamp_ms, message.replace("\t", "").rstrip()
 
 
-def parse_data_storage_file(file_path):
-    """Read a DS file and decode its timeline and EVS packets."""
 
+"""
+Read a DS file and decode its timeline and EVS packets.
+"""
+def parse_data_storage_file(file_path):
     with open(file_path, "rb") as file:
         data = file.read()
 
@@ -251,10 +247,10 @@ def parse_data_storage_file(file_path):
 
     return events
 
-
+"""
+Load DS files, find the injection point, and print the timeline.
+"""
 def main():
-    """Load DS files, find the injection point, and print the timeline."""
-
     arguments = sys.argv[1:]
 
     show_raw_milliseconds = "--ms" in arguments

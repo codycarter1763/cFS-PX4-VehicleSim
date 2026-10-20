@@ -11,11 +11,11 @@ Usage:
 
 Needs:  pip install pyulog     (read_ds_timeline.py must be in the same folder)
 
-Clock:
-    ULog timestamps are microseconds since PX4 boot, the same clock as MAVLink
-    time_boot_ms, so cFS events that carry px4_ms and PX4 events share one axis.
-    cFS events without px4_ms are placed with the median (px4_ms - cFE time) offset
-    and marked with '~'.
+
+ULog timestamps are microseconds since PX4 boot, the same clock as MAVLink
+time_boot_ms, so cFS events that carry px4_ms and PX4 events share one axis.
+cFS events without px4_ms are placed with the median (px4_ms - cFE time) offset
+and marked with '~'. 
 
 Anchors for the causal sequence:
     Fault:   PX4's own "Injected" log line (falls back to the cFS GPS_FAIL send).
@@ -41,7 +41,7 @@ from pyulog import ULog
 from read_ds_timeline import parse_data_storage_file, format_px4_time
 
 
-# ---------------------------------------------------------------- constants
+# constants
 
 GPS_TOPICS = ("vehicle_gnss", "sensor_gnss", "sensor_gps")
 MIN_GPS_GAP_MS = 500
@@ -71,11 +71,13 @@ PARAMETER_NAMES = ("EKF2_NOAID_TOUT", "EKF2_GPS_CTRL", "SYS_FAILURE_EN",
 RESTORE_MARGIN_MS = 20
 
 
-# ---------------------------------------------------------------- events
-
+# events
+"""
+Dictionary for the events from the logs to follow.
+"""
 def make_event(time_ms, side, text, key=None, signal=None, old=None, new=None,
                estimated=False):
-    """Every timeline row, from either side, is one of these dictionaries."""
+    
     return {
         "time": time_ms,        # PX4 boot time in ms
         "side": side,           # "cFS" or "PX4"
@@ -87,26 +89,34 @@ def make_event(time_ms, side, text, key=None, signal=None, old=None, new=None,
         "estimated": estimated, # True if placed with the cFE-clock offset
     }
 
-
+"""
+Return event as GPS_FAIL based on the logs.
+"""
 def is_injection(event):
     return event["side"] == "cFS" and (
         event["key"] == 1 or "GPS_FAIL sent" in event["event"])
 
-
+"""
+Return event as GPS_RESTORE based on the logs.
+"""
 def is_restore(event):
     return event["side"] == "cFS" and (
         event["key"] == 2 or "GPS_RESTORE sent" in event["event"]
         or "GPS_OK sent" in event["event"])
 
-
+"""
+Wrapper for --ms switch. 
+"""
 def format_time(time_ms, raw_ms):
     if raw_ms:
         return f"{time_ms:.0f}"
     return format_px4_time(time_ms)
 
 
-# ---------------------------------------------------------------- cFS side
-
+# cFS side
+"""
+Looks at the path and finds the DS files in the cFS build directory.
+"""
 def find_ds_files(patterns):
     files = sorted(path for pattern in patterns
                    for path in glob.glob(os.path.expanduser(pattern)))
@@ -115,8 +125,10 @@ def find_ds_files(patterns):
     return files
 
 
+"""
+Read relevant cFS events and put them on the PX4 clock.
+"""
 def load_cfs_events(files, run_info):
-    """Read relevant cFS events and put them on the PX4 clock."""
     raw_events = []
     for path in files:
         raw_events.extend(parse_data_storage_file(path))
@@ -160,18 +172,20 @@ def load_cfs_events(files, run_info):
     return events
 
 
-# ---------------------------------------------------------------- PX4 side
-
+# PX4 side
+"""
+Return a ULog topic's data, or None if it was not recorded.
+"""
 def get_topic(log, name):
-    """Return a ULog topic's data, or None if it was not recorded."""
     try:
         return log.get_dataset(name).data
     except Exception:
         return None
 
-
+"""
+Add one event each time a value changes.
+"""
 def add_changes(events, times_us, values, label, key, signal, names=None):
-    """Add one event each time a value changes."""
     previous = None
     for time_us, value in zip(times_us, values):
         value = int(value)
@@ -183,9 +197,10 @@ def add_changes(events, times_us, values, label, key, signal, names=None):
                                      signal=signal, old=old, new=new))
         previous = value
 
-
+"""
+GPS fix changes, plus gaps (injection stops the publisher; no fix_type=0 appears).
+"""
 def add_gps_events(log, events):
-    """GPS fix changes, plus gaps (injection stops the publisher; no fix_type=0 appears)."""
     candidates = []
     for name in GPS_TOPICS:
         data = get_topic(log, name)
@@ -218,16 +233,20 @@ def add_gps_events(log, events):
     print(f"[px4] GPS source: {name} ({len(times)} samples, "
           f"gap threshold {gap_limit:.0f} ms)", file=sys.stderr)
 
-
+"""
+The EKF starts or stops fusing GNSS position.
+"""
 def add_ekf_fusion_events(log, events):
-    """The EKF starts or stops fusing GNSS position."""
+    
     data = get_topic(log, "estimator_aid_src_gnss_pos")
     if data is not None and "fused" in data:
         add_changes(events, data["timestamp"], data["fused"],
                     "ekf gnss_pos fused", "ekf_gnss",
                     "estimator_aid_src_gnss_pos.fused")
 
-
+"""
+Helper for vehicle status events.
+"""
 def add_vehicle_status_events(log, events):
     status = get_topic(log, "vehicle_status")
     if status is None:
@@ -243,9 +262,10 @@ def add_vehicle_status_events(log, events):
         add_changes(events, times, status["failsafe"], "vehicle_status.failsafe",
                     "failsafe", "vehicle_status.failsafe")
 
-
+"""
+Helper to find failsafe flags.
+"""
 def add_flag_events(log, events, topic, start_ms, end_ms):
-    """Every 1-byte flag in the topic that flips inside the window."""
     data = get_topic(log, topic)
     if data is None:
         return
@@ -269,56 +289,10 @@ def add_flag_events(log, events, topic, start_ms, end_ms):
     print(f"[px4] {topic}: {flips_in_log} flag flips in whole log, "
           f"{flips_in_window} inside the window", file=sys.stderr)
 
-
-def add_position_error_events(log, events, threshold_m, start_ms, end_ms, run_info):
-    """Horizontal |estimate - ground truth|; adds an event when it crosses the threshold.
-
-    The simulator's origin may differ from the estimator's, so the average offset
-    before the window is removed first."""
-    estimate = get_topic(log, "vehicle_local_position")
-    truth = get_topic(log, "vehicle_local_position_groundtruth")
-    if estimate is None or truth is None or len(truth["timestamp"]) < 2:
-        print("[px4] position error: vehicle_local_position(_groundtruth) "
-              "not logged, skipped", file=sys.stderr)
-        return
-
-    times = estimate["timestamp"].astype(float)
-    truth_times = truth["timestamp"].astype(float)
-    error_x = estimate["x"] - np.interp(times, truth_times, truth["x"])
-    error_y = estimate["y"] - np.interp(times, truth_times, truth["y"])
-
-    before_window = times < start_ms * 1000
-    if before_window.sum() >= 10:
-        error_x = error_x - np.median(error_x[before_window])
-        error_y = error_y - np.median(error_y[before_window])
-    error = np.hypot(error_x, error_y)
-
-    in_window = (times >= start_ms * 1000) & (times <= end_ms * 1000)
-    if in_window.any():
-        worst = int(np.argmax(np.where(in_window, error, -1)))
-        run_info["max_position_error_m"] = {
-            "value": float(error[worst]), "px4_ms": float(times[worst] / 1000)}
-        print(f"[px4] position error vs groundtruth: max {error[worst]:.2f} m at "
-              f"{format_px4_time(times[worst] / 1000)} (threshold {threshold_m} m)",
-              file=sys.stderr)
-
-    over = error > threshold_m
-    for i in range(1, len(times)):
-        time_ms = times[i] / 1000
-        if over[i] == over[i - 1] or not start_ms <= time_ms <= end_ms:
-            continue
-        if over[i]:
-            text = f"horizontal position error exceeds {threshold_m:g} m ({error[i]:.2f} m)"
-            old, new = "<=thr", ">thr"
-        else:
-            text = f"horizontal position error back under {threshold_m:g} m ({error[i]:.2f} m)"
-            old, new = ">thr", "<=thr"
-        events.append(make_event(time_ms, "PX4", text, key="pos_err",
-                                 signal="position_error_m", old=old, new=new))
-
-
+"""
+The text PX4 itself printed (e.g. 'Injected: gps off', 'Failsafe: blind land').
+"""
 def add_log_message_events(log, events):
-    """The text PX4 itself printed (e.g. 'Injected: gps off', 'Failsafe: blind land')."""
     for message in log.logged_messages:
         level = message.log_level
         if level >= 48:                      # ULog stores the level as an ASCII digit
@@ -328,9 +302,10 @@ def add_log_message_events(log, events):
                                  f"PX4 log [{level_name}] {message.message.strip()}",
                                  key="log"))
 
-
+"""
+Value of each parameter of interest and where it came from.
+"""
 def read_parameters(log):
-    """Value of each parameter of interest and where it came from."""
     boot_values = dict(log.initial_parameters)
 
     defaults = {}
@@ -356,26 +331,26 @@ def read_parameters(log):
             result[name]["changed_during_flight"] = changes[name]
     return result
 
-
-def load_px4_events(log, start_ms, end_ms, error_threshold_m, run_info):
-    """Everything from the ULog that happened inside the window."""
+"""
+Everything from the ULog that happened inside the fault or restore window.
+"""
+def load_px4_events(log, start_ms, end_ms, run_info):
     events = []
     add_gps_events(log, events)
     add_ekf_fusion_events(log, events)
     add_vehicle_status_events(log, events)
     add_flag_events(log, events, "failsafe_flags", start_ms, end_ms)
     add_flag_events(log, events, "estimator_status_flags", start_ms, end_ms)
-    if error_threshold_m > 0:
-        add_position_error_events(log, events, error_threshold_m, start_ms, end_ms, run_info)
     add_log_message_events(log, events)
 
     run_info["px4_parameters"] = read_parameters(log)
     run_info["ulog_span_ms"] = (log.start_timestamp / 1000, log.last_timestamp / 1000)
     return [event for event in events if start_ms <= event["time"] <= end_ms]
 
-
+"""
+A .ulg file, or the newest .ulg under a folder.
+"""
 def find_ulog(path):
-    """A .ulg file, or the newest .ulg under a folder."""
     path = os.path.expanduser(path)
     if not os.path.isdir(path):
         return path
@@ -385,10 +360,11 @@ def find_ulog(path):
     return max(logs, key=os.path.getmtime)
 
 
-# ---------------------------------------------------------------- causal sequence
-
+# causal sequence
+"""
+Return (stage, role) for an event, or ("", "") if it is not part of the sequence.
+"""
 def classify_event(event, after_restore):
-    """Return (stage, role) for an event, or ("", "") if it is not part of the sequence."""
     key = event["key"]
     text = event["event"]
     signal = event["signal"] or ""
@@ -435,12 +411,14 @@ def classify_event(event, after_restore):
         return ("MODE_RECOVERED" if after_restore else "FAILSAFE_ACTION"), "action"
     return "", ""
 
+"""
+Add stage, role and times to every event. Returns the anchors used.
 
+Events later than recovery_s after the restore anchor (e.g. the end of the mission,
+return-to-launch, landing) are left out of the sequence; they stay in the timeline.
+"""
 def annotate_events(events, injection_time, recovery_s):
-    """Add stage, role and times to every event. Returns the anchors used.
 
-    Events later than recovery_s after the restore anchor (e.g. the end of the mission,
-    return-to-launch, landing) are left out of the sequence; they stay in the timeline."""
     for event in events:
         event["from_cfs_injection_ms"] = event["time"] - injection_time
 
@@ -483,9 +461,10 @@ def annotate_events(events, injection_time, recovery_s):
         "cfs_inject_ms": 0.0, "cfs_restore_ms": restore_ms,
     }
 
-
+"""
+State before the fault: the 'old' value at each signal's first change.
+"""
 def find_baseline(events):
-    """State before the fault: the 'old' value at each signal's first change."""
     baseline = {}
     for event in events:
         if (event["side"] == "PX4" and event["signal"] and not event["after_restore"]
@@ -494,7 +473,9 @@ def find_baseline(events):
             baseline[event["signal"]] = event["old"]
     return baseline
 
-
+"""
+Finds first divergence in fault events.
+"""
 def find_first_divergence(events):
     for event in events:
         if (event["side"] == "PX4" and not event["after_restore"]
@@ -503,16 +484,20 @@ def find_first_divergence(events):
             return event
     return None
 
-
+"""
+Finds the last valid GPS signal before the fault turns GPS off.
+"""
 def find_last_good_gps_sample(events):
     for event in events:
         if event["stage"] == "LAST_GPS_SAMPLE" and event["from_cfs_injection_ms"] >= -100:
             return event
     return None
 
-
+"""
+Makes list of events.
+"""
 def summarize_stages(events):
-    """First occurrence of each stage, with the gap from the previous stage."""
+    
     stages = []
     by_key = {}
     previous_time = None
@@ -540,8 +525,10 @@ def summarize_stages(events):
     return stages
 
 
-# ---------------------------------------------------------------- printing
-
+# printing
+"""
+Helper to print the event timeline.
+"""
 def print_timeline(events, raw_ms):
     time_label = "px4_ms" if raw_ms else "px4_time"
     width = 9 if raw_ms else 12
@@ -553,7 +540,9 @@ def print_timeline(events, raw_ms):
               f"{event['side']:<4}  {event['stage']:<17} {event['event']}")
     print("\n~ = placed from cFE time via median offset (event had no px4_ms)")
 
-
+"""
+Prints values just before first change.
+"""
 def print_baseline(baseline):
     if not baseline:
         return
@@ -561,7 +550,9 @@ def print_baseline(baseline):
     for signal, value in baseline.items():
         print(f"  {signal:<48} {value}")
 
-
+"""
+Prints phases of the casual sequence.
+"""
 def print_phase(events, phase_name, after_restore, anchor_ms, anchor_source,
                 cfs_send_ms, first_divergence, last_good_sample, raw_ms):
     rows = [e for e in events if e["stage"] and e["after_restore"] == after_restore]
@@ -594,7 +585,9 @@ def print_phase(events, phase_name, after_restore, anchor_ms, anchor_source,
         previous_stage = event["stage"]
         previous_since = event["since_anchor_ms"]
 
-
+"""
+Prints PX4 specific parameters for the output log.
+"""
 def print_parameters(parameters):
     print("\nPX4 parameters for this log")
     for name, info in parameters.items():
@@ -604,7 +597,9 @@ def print_parameters(parameters):
             changed = f"  CHANGED IN FLIGHT: {info['changed_during_flight']}"
         print(f"  {name:<20} {str(value):<14} ({info['source']}){changed}")
 
-
+"""
+Prints summary of first occurence of each stage.
+"""
 def print_stage_summary(stages):
     print("\nStage summary (first occurrence of each stage)")
     print(f"  {'phase':<8}{'stage':<18}{'side':<5}{'since anchor':>13}"
@@ -615,7 +610,9 @@ def print_stage_summary(stages):
         print(f"  {stage['phase']:<8}{stage['stage']:<18}{stage['side']:<5}"
               f"{stage['since_anchor_ms']:>+10.0f} ms{gap_text:>18}{stage['count']:>4}")
 
-
+"""
+Prints full casual fault and restore sequence.
+"""
 def print_sequence(events, anchors, baseline, first_divergence, last_good_sample,
                    parameters, raw_ms):
     print("\n================ CAUSAL SEQUENCE ================")
@@ -639,10 +636,11 @@ def print_sequence(events, anchors, baseline, first_divergence, last_good_sample
               f"{last_good_sample['since_anchor_ms']:+.0f} ms relative to the PX4 anchor")
 
 
-# ---------------------------------------------------------------- output files
-
+# output files
+"""
+Automatically increments file name number if there are two of the same file names.
+"""
 def next_run_number(output_paths):
-    """One more than the highest run_NNN already in the output folder(s)."""
     highest = 0
     for path in output_paths:
         stem, _ = os.path.splitext(path)
@@ -656,12 +654,16 @@ def next_run_number(output_paths):
                 highest = max(highest, int(match.group(1)))
     return highest + 1
 
-
+"""
+Adds a run number to a filename.
+"""
 def numbered_path(path, number):
     stem, extension = os.path.splitext(path)
     return f"{stem}_{number:03d}{extension}"
 
-
+"""
+Helper to compute hash for files, used to check what log files pertain to each other.
+"""
 def file_hash(path):
     try:
         with open(path, "rb") as file:
@@ -669,7 +671,9 @@ def file_hash(path):
     except OSError:
         return None
 
-
+"""
+Helper that turns event into a summary to be written into the JSON file.
+"""
 def describe_event(event):
     if event is None:
         return None
@@ -677,7 +681,9 @@ def describe_event(event):
             "since_anchor_ms": event["since_anchor_ms"], "stage": event["stage"],
             "event": event["event"]}
 
-
+"""
+Writes JSON file with log data.
+"""
 def write_json(path, events, anchors, baseline, first_divergence, last_good_sample,
                run_info, args, ds_files, ulog_path):
     document = {
@@ -710,7 +716,9 @@ def write_json(path, events, anchors, baseline, first_divergence, last_good_samp
         json.dump(document, file, indent=1, default=str)
     print("Wrote", path)
 
-
+"""
+Writes CSV with log data.
+"""
 def write_csv(path, events):
     columns = ("from_cfs_injection_ms", "since_anchor_ms", "px4_time", "px4_ms",
                "side", "estimated", "stage", "role", "signal", "old", "new", "event")
@@ -732,8 +740,10 @@ def write_csv(path, events):
     print("Wrote", path)
 
 
-# ---------------------------------------------------------------- main
-
+# main
+"""
+Checks if any PX4 events fall within the window of time selected.
+"""
 def warn_if_wrong_ulog(events, injection_time, run_info):
     span = run_info.get("ulog_span_ms")
     no_px4_events = not any(e["side"] == "PX4" for e in events)
@@ -747,7 +757,9 @@ def warn_if_wrong_ulog(events, injection_time, run_info):
           "    Pass the matching .ulg file to --ulog instead of the folder.\n",
           file=sys.stderr)
 
-
+"""
+Input argument parser.
+"""
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Merge cFS Data Storage events and PX4 ULog events.")
