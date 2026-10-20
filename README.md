@@ -137,6 +137,68 @@ TO_LAB will automatically be enabled when the GUI starts up, so an external comm
 <br/>
 **Note** Start Loaded Mission will only work if there is a flight plan loaded into the vehicle through PX4 and QGroundControl. 
 
+# Fault Analysis Tool
+
+Included in this project is a tool designed to parse through the cFS and PX4 logs after a GPS fault test or restore and rebuild the order of events.
+
+## How it works
+
+Two recorders capture each test:
+
+| Recorder | What it records | File |
+|---|---|---|
+| PX4 flight log | GPS samples, estimator flags, failsafe flags, nav state, position, PX4 text messages | `<time>.ulg` |
+| cFS Data Storage (DS) | Events and telemetry `mavlink_app` produced from MAVLink (GPS fix changes, mode changes, status text, command ACKs, inject and restore commands) | `tline*.dat` |
+
+Both are put on one clock, PX4's time since boot. Each cFS event carries a `px4_ms` value copied from the MAVLink message that produced it. 
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `read_ds_timeline.py` | Decodes DS files and prints a cFS-only timeline. |
+| `merge_timeline.py` | Calls the decoder, reads the ULog, merges both on the PX4 clock, and prints and saves the causal sequence. |
+
+## Running a test
+1. Run the flight and the GPS fault test (inject, then restore).
+2. Stop the flight or wait until flight path is completed.
+3. Run the merge:
+```
+   python3 merge_timeline.py \
+       --ds ~/cFS/build-native_std/exe/cpu1/cf/tline*.dat \
+       --ulog ~/PX4-Autopilot/build/px4_sitl_default/rootfs/fs/log/<date>/<time>.ulg \
+       --json run.json --csv run.csv
+```
+
+Use the `.ulg` file from the same flight as the DS files. The script warns if no PX4 events fall in the fault window, which usually means the wrong log was given.
+
+Output files are numbered (`run_001.json`, `run_002.json`, ...) so a new run never overwrites an old one. The JSON and CSV from one run share the same number.
+
+## Output
+
+The tool prints:
+- **Timeline:** every cFS and PX4 event in the window, in PX4 time order.
+- **Causal sequence:** the fault phase and the restore phase as stage-by-stage tables, with the first observable divergence and the last good GPS sample marked.
+- **PX4 parameters** that explain the behavior (`EKF2_NOAID_TOUT`, `EKF2_GPS_CTRL`, `SYS_FAILURE_EN`, `NAV_RCL_ACT`, `COM_ARM_WO_GPS`).
+- **Stage summary:** the first occurrence of each stage with the gap from the previous one.
+
+### JSON file
+The JSON is meant for comparing runs. It contains:
+
+- `provenance`: the ULog and DS file paths with a short hash of each, the options used, the cFS-to-PX4 clock spread, the PX4 parameters, and the peak position error
+- `anchors`: the fault and restore reference times and where they came from
+- `baseline`: signal states before the fault
+- `first_divergence` and `last_good_gps_sample`
+- `stages`: one entry per stage
+- `events`: every sequence event, with both `px4_ms` and `px4_time`
+
+## Example result
+
+In three test runs the sequence repeated closely, keep in mind the origin time amount is when PX4 picks up the fault command and the negative time amounts is how long before that point the event happened.
+
+<img width="693" height="550" alt="image" src="https://github.com/user-attachments/assets/ca964f5d-4128-4d22-b327-f3551d06fa8d" />
+
+
 # Conclusion
 
 While PX4 does not require NASA's Core Flight System (cFS) to operate, this project demonstrates how cFS can complement an existing autopilot by providing an additional framework for command sequencing, telemetry distribution, and fault-injection testing. Integrating cFS with PX4 SITL provided hands-on experience with flight-software architecture, MAVLink communication, real-time telemetry processing, and automated test sequences. 
