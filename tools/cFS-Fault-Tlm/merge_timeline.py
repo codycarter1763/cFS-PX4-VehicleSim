@@ -811,7 +811,7 @@ def main():
 
     start_ms = injection["time"] - args.pre * 1000
     end_ms = max(e["time"] for e in cfs_events) + args.post * 1000
-    px4_events = load_px4_events(log, start_ms, end_ms, args.err_thresh, run_info)
+    px4_events = load_px4_events(log, start_ms, end_ms, run_info)
 
     events = [e for e in cfs_events + px4_events if start_ms <= e["time"] <= end_ms]
     events.sort(key=lambda e: e["time"])
