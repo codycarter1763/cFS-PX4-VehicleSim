@@ -43,6 +43,22 @@ CFE_Status_t MAVLINK_APP_DisplayParamCmd(const MAVLINK_APP_DisplayParamCmd_t *Ms
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for MAVLINK_APP_InjectGPSFailureCmd()
+ * ----------------------------------------------------
+ */
+CFE_Status_t MAVLINK_APP_InjectGPSFailureCmd(const MAVLINK_APP_InjectGPSFailureCmd_t *Msg)
+{
+    UT_GenStub_SetupReturnBuffer(MAVLINK_APP_InjectGPSFailureCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(MAVLINK_APP_InjectGPSFailureCmd, const MAVLINK_APP_InjectGPSFailureCmd_t *, Msg);
+
+    UT_GenStub_Execute(MAVLINK_APP_InjectGPSFailureCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(MAVLINK_APP_InjectGPSFailureCmd, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for MAVLINK_APP_NoopCmd()
  * ----------------------------------------------------
  */
@@ -91,6 +107,22 @@ CFE_Status_t MAVLINK_APP_ResetCountersCmd(const MAVLINK_APP_ResetCountersCmd_t *
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for MAVLINK_APP_RestoreGPSFailureCmd()
+ * ----------------------------------------------------
+ */
+CFE_Status_t MAVLINK_APP_RestoreGPSFailureCmd(const MAVLINK_APP_RestoreGPSFailureCmd_t *Msg)
+{
+    UT_GenStub_SetupReturnBuffer(MAVLINK_APP_RestoreGPSFailureCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(MAVLINK_APP_RestoreGPSFailureCmd, const MAVLINK_APP_RestoreGPSFailureCmd_t *, Msg);
+
+    UT_GenStub_Execute(MAVLINK_APP_RestoreGPSFailureCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(MAVLINK_APP_RestoreGPSFailureCmd, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for MAVLINK_APP_SendHkCmd()
  * ----------------------------------------------------
  */
@@ -103,4 +135,20 @@ CFE_Status_t MAVLINK_APP_SendHkCmd(const MAVLINK_APP_SendHkCmd_t *Msg)
     UT_GenStub_Execute(MAVLINK_APP_SendHkCmd, Basic, NULL);
 
     return UT_GenStub_GetReturnValue(MAVLINK_APP_SendHkCmd, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for MAVLINK_APP_StartMissionCmd()
+ * ----------------------------------------------------
+ */
+CFE_Status_t MAVLINK_APP_StartMissionCmd(const MAVLINK_APP_StartMissionCmd_t *Msg)
+{
+    UT_GenStub_SetupReturnBuffer(MAVLINK_APP_StartMissionCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(MAVLINK_APP_StartMissionCmd, const MAVLINK_APP_StartMissionCmd_t *, Msg);
+
+    UT_GenStub_Execute(MAVLINK_APP_StartMissionCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(MAVLINK_APP_StartMissionCmd, CFE_Status_t);
 }

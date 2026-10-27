@@ -175,6 +175,8 @@ void Test_MAVLINK_APP_Init(void)
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 6); /* 1 from table registration error, 1 from successful init event */
 }
 
+
+
 /*
  * Register the test cases to execute with the unit test tool
  */

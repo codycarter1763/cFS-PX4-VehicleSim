@@ -29,7 +29,9 @@
 ** Required header files.
 */
 #include "cfe.h"
+#include "mavlink_app.h" 
 #include "mavlink_app_msg.h"
+
 
 bool MAVLINK_APP_VerifyCmdLength(const CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 void MAVLINK_APP_ProcessGroundCommand(const CFE_SB_Buffer_t *SBBufPtr);

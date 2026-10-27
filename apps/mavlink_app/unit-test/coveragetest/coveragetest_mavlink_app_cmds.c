@@ -41,7 +41,11 @@
 #include "mavlink_app.h"
 #include "mavlink_app_dispatch.h"
 #include "mavlink_app_cmds.h"
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#include <common/mavlink.h>
+#pragma GCC diagnostic pop
 /*
 **********************************************************************************
 **          TEST CASE FUNCTIONS
@@ -207,6 +211,86 @@ void Test_MAVLINK_APP_DisplayParamCmd(void)
     UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
 }
 
+void Test_MAVLINK_APP_StartMissionCmd(void)
+{
+    MAVLINK_APP_StartMissionCmd_t TestMsg;
+    memset(&TestMsg, 0, sizeof(TestMsg));
+
+    /* nominal: send succeeds */
+    UtAssert_INT32_EQ(MAVLINK_APP_StartMissionCmd(&TestMsg), CFE_SUCCESS);
+
+    /* Error socket send fails */
+    UT_SetDeferredRetcode(UT_KEY(OS_SocketSendTo), 1, OS_ERROR);
+    UtAssert_INT32_EQ(MAVLINK_APP_StartMissionCmd(&TestMsg), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+}
+
+static uint8  UT_SentBuf[MAVLINK_MAX_PACKET_LEN];
+static size_t UT_SentLen;
+
+static void UT_CaptureSendTo(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
+{
+    const void *Buffer = UT_Hook_GetArgValueByName(Context, "buffer", const void *);
+    size_t      BufLen = UT_Hook_GetArgValueByName(Context, "buflen", size_t);
+    int32       Status = 0;
+
+    UT_SentLen = (BufLen > sizeof(UT_SentBuf)) ? sizeof(UT_SentBuf) : BufLen;
+    memcpy(UT_SentBuf, Buffer, UT_SentLen);
+
+    UT_Stub_GetInt32StatusCode(Context, &Status);
+    UT_Stub_SetReturnValue(FuncKey, Status);
+}
+
+void Test_MAVLINK_APP_InjectGPSFaultCmd(void)
+{
+    UT_CheckEvent_t EventTest;
+    mavlink_command_long_t Cmd;
+    MAVLINK_APP_InjectGPSFailureCmd_t Msg;
+    mavlink_message_t MavMsg;
+    mavlink_status_t MavStatus;
+    bool Decoded = false;
+    size_t i;
+
+    memset(&MAVLINK_APP_Data, 0, sizeof(MAVLINK_APP_Data)); 
+    memset(&Cmd, 0, sizeof(Cmd));
+    memset(&Msg, 0, sizeof(Msg));
+    memset(&MavStatus, 0, sizeof(MavStatus));
+    UT_SentLen = 0;
+
+    /* Nomimnal: Correct InjectGPSFault Command */
+    UT_CHECKEVENT_SETUP(&EventTest, MAVLINK_APP_INJECT_GPS_FAILURE_INF_EID, NULL);
+    UT_SetHandlerFunction(UT_KEY(OS_SocketSendTo), UT_CaptureSendTo, NULL);
+
+    UtAssert_INT32_EQ(MAVLINK_APP_InjectGPSFailureCmd(&Msg), CFE_SUCCESS);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandCounter, 1);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandErrorCounter, 0);
+    UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
+    UtAssert_STUB_COUNT(OS_SocketSendTo, 1);
+
+    for (i = 0; i < UT_SentLen; i++) {
+        if (mavlink_parse_char(MAVLINK_COMM_1, UT_SentBuf[i], &MavMsg, &MavStatus) && MavMsg.msgid == MAVLINK_MSG_ID_COMMAND_LONG) {
+            mavlink_msg_command_long_decode(&MavMsg, &Cmd);
+            Decoded = true;
+            break;
+        }
+    }
+        UtAssert_True(Decoded, "Sent bytes decoded as MAVLink COMMAND_LONG");
+        UtAssert_UINT16_EQ(Cmd.command, MAV_CMD_INJECT_FAILURE);
+        UtAssert_UINT8_EQ(Cmd.target_system, 1);
+        UtAssert_UINT8_EQ(Cmd.target_component, 1);
+        UtAssert_True(Cmd.param1 == 4.0f, "param1 is FAIILURE_UNIT_SENSOR_GPS (4), got %f", (double)Cmd.param1);
+        UtAssert_True(Cmd.param2 == 1.0f, "param2 is FAILURE_TYPE_OFF (1), got %f", (double)Cmd.param2);
+
+        /* Error: socket send fails */
+        UT_CHECKEVENT_SETUP(&EventTest, MAVLINK_APP_INJECT_GPS_FAILURE_ERR_EID, NULL);
+        UT_SetDeferredRetcode(UT_KEY(OS_SocketSendTo), 1, OS_ERROR);
+
+        UtAssert_INT32_EQ(MAVLINK_APP_InjectGPSFailureCmd(&Msg), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+        UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandCounter, 1);
+        UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandErrorCounter, 1);
+        UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
+    }
+
+
 /*
  * Register the test cases to execute with the unit test tool
  */
@@ -217,4 +301,6 @@ void UtTest_Setup(void)
     ADD_TEST(MAVLINK_APP_ResetCountersCmd);
     ADD_TEST(MAVLINK_APP_ProcessCmd);
     ADD_TEST(MAVLINK_APP_DisplayParamCmd);
+    ADD_TEST(MAVLINK_APP_StartMissionCmd);
+    ADD_TEST(MAVLINK_APP_InjectGPSFaultCmd);
 }

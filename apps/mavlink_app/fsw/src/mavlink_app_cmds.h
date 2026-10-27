@@ -28,7 +28,9 @@
 ** Required header files.
 */
 #include "cfe_error.h"
+#include "mavlink_app.h" 
 #include "mavlink_app_msg.h"
+
 
 CFE_Status_t MAVLINK_APP_SendHkCmd(const MAVLINK_APP_SendHkCmd_t *Msg);
 CFE_Status_t MAVLINK_APP_NoopCmd(const MAVLINK_APP_NoopCmd_t *Msg);

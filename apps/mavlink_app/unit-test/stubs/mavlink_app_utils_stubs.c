@@ -39,6 +39,21 @@ void MAVLINK_APP_GetCrc(const char *TableName)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for MAVLINK_APP_PublishTimeline()
+ * ----------------------------------------------------
+ */
+void MAVLINK_APP_PublishTimeline(uint8 code, uint8 a8, uint16 a16, uint32 a32)
+{
+    UT_GenStub_AddParam(MAVLINK_APP_PublishTimeline, uint8, code);
+    UT_GenStub_AddParam(MAVLINK_APP_PublishTimeline, uint8, a8);
+    UT_GenStub_AddParam(MAVLINK_APP_PublishTimeline, uint16, a16);
+    UT_GenStub_AddParam(MAVLINK_APP_PublishTimeline, uint32, a32);
+
+    UT_GenStub_Execute(MAVLINK_APP_PublishTimeline, Basic, NULL);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for MAVLINK_APP_TblValidationFunc()
  * ----------------------------------------------------
  */
