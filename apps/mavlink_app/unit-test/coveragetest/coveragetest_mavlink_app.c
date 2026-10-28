@@ -35,6 +35,13 @@
 /*
  * Includes
  */
+
+   #pragma GCC diagnostic push
+   #pragma GCC diagnostic ignored "-Wpedantic"
+   #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+   #include <common/mavlink.h>
+   #pragma GCC diagnostic pop
+
 #include "sample_lib.h" /* For SAMPLE_LIB_Function */
 #include "mavlink_app_coveragetest_common.h"
 
@@ -176,6 +183,29 @@ void Test_MAVLINK_APP_Init(void)
 }
 
 
+void Test_MAVLINK_APP_HandleMavlinkMsg_Heartbeat(void) {
+    mavlink_message_t Msg;
+
+    /* QGroundControl's heartbeat (sysid 255): must be ignored */
+    mavlink_msg_heartbeat_pack(255, 190, &Msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, 0);
+    MAVLINK_APP_HandleMavlinkMsg(&Msg);
+    UtAssert_UINT32_EQ(MAVLINK_APP_Data.ParseState. HeartbeatCount, 0);
+    UtAssert_STUB_COUNT(CFE_SB_TransmitMsg, 0);
+
+    /* PX4's heartbeat: SHOULD count, decode, with HK published, and mode change logged */
+    mavlink_msg_heartbeat_pack(1, MAV_COMP_ID_AUTOPILOT1, &Msg, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4, MAV_MODE_FLAG_SAFETY_ARMED, (4u << 16), MAV_STATE_ACTIVE);
+    MAVLINK_APP_HandleMavlinkMsg(&Msg);
+    UtAssert_UINT32_EQ(MAVLINK_APP_Data.ParseState. HeartbeatCount, 1);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.ParseState.Armed, 1);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.ParseState.MainMode, 4);
+    UtAssert_STUB_COUNT(CFE_SB_TransmitMsg, 1);
+    UtAssert_STUB_COUNT(MAVLINK_APP_PublishTimeline, 1); /* TL_MODE_CHANGE */
+
+    /* Publish the same mode: will count, but no new mode change timeline entry */
+    MAVLINK_APP_HandleMavlinkMsg(&Msg);
+    UtAssert_UINT32_EQ(MAVLINK_APP_Data.ParseState. HeartbeatCount, 2);
+    UtAssert_STUB_COUNT(MAVLINK_APP_PublishTimeline, 1);
+}
 
 /*
  * Register the test cases to execute with the unit test tool
@@ -184,4 +214,5 @@ void UtTest_Setup(void)
 {
     ADD_TEST(MAVLINK_APP_Main);
     ADD_TEST(MAVLINK_APP_Init);
+    ADD_TEST(MAVLINK_APP_HandleMavlinkMsg_Heartbeat);
 }

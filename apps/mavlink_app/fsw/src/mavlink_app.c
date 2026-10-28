@@ -116,6 +116,235 @@ void MAVLINK_APP_Main(void)
 
     CFE_ES_ExitApp(MAVLINK_APP_Data.RunStatus);
 }
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                            */
+/* Handle one complete, CRC-valid MAVLink message from PX4                    */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+void MAVLINK_APP_HandleMavlinkMsg(const mavlink_message_t *msg)
+{
+    switch (msg->msgid)
+    {
+        case MAVLINK_MSG_ID_HEARTBEAT:
+        {
+            mavlink_heartbeat_t heartbeat;
+            mavlink_msg_heartbeat_decode(msg, &heartbeat);
+            
+ 
+ 
+            /* Only accept the flight controller's heartbeat */
+            if (msg->sysid != 1 ||
+                msg->compid != MAV_COMP_ID_AUTOPILOT1 ||
+                heartbeat.autopilot != MAV_AUTOPILOT_PX4)
+            {
+                break;
+            }
+ 
+            MAVLINK_APP_Data.ParseState.HeartbeatCount++;
+            MAVLINK_APP_Data.ParseState.Armed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) ? 1 : 0;
+            MAVLINK_APP_Data.ParseState.MainMode = (heartbeat.custom_mode >> 16) & 0xFF;
+            MAVLINK_APP_Data.ParseState.SubMode = (heartbeat.custom_mode >> 24) & 0xFF;
+            MAVLINK_APP_Data.ParseState.SystemStatus = heartbeat.system_status;
+ 
+            if (heartbeat.custom_mode != MAVLINK_APP_Data.PrevCustomMode)
+            {
+            CFE_EVS_SendEvent(MAVLINK_APP_MODE_CHG_INF_EID, CFE_EVS_EventType_INFORMATION,
+              "MODE 0x%08lX->0x%08lX main=%u sub=%u px4_time = %lu:%02lu:%02lu.%03lu",
+              (unsigned long)MAVLINK_APP_Data.PrevCustomMode,
+              (unsigned long)heartbeat.custom_mode,
+              (unsigned)MAVLINK_APP_Data.ParseState.MainMode,
+              (unsigned)MAVLINK_APP_Data.ParseState.SubMode,
+              (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+              (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+              (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+              (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+ 
+                MAVLINK_APP_PublishTimeline(TL_MODE_CHANGE,
+                                            MAVLINK_APP_Data.ParseState.MainMode,
+                                            MAVLINK_APP_Data.ParseState.SubMode,
+                                            heartbeat.custom_mode);
+                MAVLINK_APP_Data.PrevCustomMode = heartbeat.custom_mode;
+            }
+ 
+            if (MAVLINK_APP_Data.LastGpsFixMs != 0 && !MAVLINK_APP_Data.GpsStale &&
+                (MAVLINK_APP_Data.PX4BootMs - MAVLINK_APP_Data.LastGpsFixMs) > 2000)
+                {
+                    MAVLINK_APP_Data.GpsStale = 1;
+                    CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
+                        "GPS_RAW_INT stale >2s px4_time = %lu:%02lu:%02lu.%03lu",
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                        (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+                    MAVLINK_APP_PublishTimeline(TL_GPS_STALE, 0, 0, 0);
+                }
+ 
+            MAVLINK_APP_Data.HkTlm.Payload.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
+ 
+            MAVLINK_APP_Data.HkTlm.Payload.Armed = MAVLINK_APP_Data.ParseState.Armed;
+            MAVLINK_APP_Data.HkTlm.Payload.MainMode = MAVLINK_APP_Data.ParseState.MainMode;
+            MAVLINK_APP_Data.HkTlm.Payload.SubMode = MAVLINK_APP_Data.ParseState.SubMode;
+            MAVLINK_APP_Data.HkTlm.Payload.HeartbeatCount = MAVLINK_APP_Data.ParseState.HeartbeatCount;
+            
+            CFE_SB_TimeStampMsg(CFE_MSG_PTR(MAVLINK_APP_Data.HkTlm.TelemetryHeader));
+            CFE_SB_TransmitMsg(CFE_MSG_PTR(MAVLINK_APP_Data.HkTlm.TelemetryHeader), true);
+ 
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_ATTITUDE:
+        {
+            mavlink_attitude_t attitude;
+            mavlink_msg_attitude_decode(msg, &attitude);
+ 
+            MAVLINK_APP_Data.NavTlm.Payload.RollRad = attitude.roll;
+            MAVLINK_APP_Data.NavTlm.Payload.PitchRad = attitude.pitch;
+            MAVLINK_APP_Data.NavTlm.Payload.YawRad = attitude.yaw;  
+            MAVLINK_APP_Data.NavTlm.Payload.RollRateRadPs = attitude.rollspeed;
+            MAVLINK_APP_Data.NavTlm.Payload.PitchRateRadPs = attitude.pitchspeed;
+            MAVLINK_APP_Data.NavTlm.Payload.YawRateRadPs = attitude.yawspeed;
+            MAVLINK_APP_Data.PX4BootMs = attitude.time_boot_ms;
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        {
+            mavlink_global_position_int_t global_position;
+            mavlink_msg_global_position_int_decode(msg, &global_position);
+ 
+            MAVLINK_APP_Data.NavTlm.Payload.LatDegE7 = global_position.lat;
+            MAVLINK_APP_Data.NavTlm.Payload.LonDegE7 = global_position.lon;
+            MAVLINK_APP_Data.NavTlm.Payload.RelativeAltitude = global_position.relative_alt;
+            MAVLINK_APP_Data.NavTlm.Payload.VxCms = global_position.vx;
+            MAVLINK_APP_Data.NavTlm.Payload.VyCms = global_position.vy;
+            MAVLINK_APP_Data.NavTlm.Payload.VzCms = global_position.vz;
+            MAVLINK_APP_Data.NavTlm.Payload.HeadingCDeg = global_position.hdg;
+            
+            MAVLINK_APP_Data.PX4BootMs = global_position.time_boot_ms;
+            /* Only post SB messages at 5Hz instead of 50Hz.
+             * NavCounter lives in MAVLINK_APP_Data (not a static local) so Init and
+             * unit tests can reset it. */
+            MAVLINK_APP_Data.NavCounter++;
+ 
+            if (MAVLINK_APP_Data.NavCounter >= 10)
+            {
+                MAVLINK_APP_Data.NavCounter = 0;
+                MAVLINK_APP_Data.NavTlm.Payload.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
+                CFE_SB_TimeStampMsg(CFE_MSG_PTR(MAVLINK_APP_Data.NavTlm.TelemetryHeader));
+                CFE_SB_TransmitMsg(CFE_MSG_PTR(MAVLINK_APP_Data.NavTlm.TelemetryHeader), true);
+            }
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_GPS_RAW_INT:
+        {
+            mavlink_gps_raw_int_t gps_raw;
+            mavlink_msg_gps_raw_int_decode(msg, &gps_raw);
+ 
+            MAVLINK_APP_Data.HkTlm.Payload.GpsFixType = gps_raw.fix_type;
+            MAVLINK_APP_Data.HkTlm.Payload.GpsNumSatellites = gps_raw.satellites_visible;
+ 
+            MAVLINK_APP_Data.LastGpsFixMs = MAVLINK_APP_Data.PX4BootMs;
+ 
+            if (MAVLINK_APP_Data.GpsStale)
+            {
+                MAVLINK_APP_Data.GpsStale = 0;
+                CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                  "GPS_RAW_INT resumed px4_time = %lu:%02lu:%02lu.%03lu",
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                                  (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+                MAVLINK_APP_PublishTimeline(TL_GPS_RESUME, 0, 0, 0);
+            }
+ 
+            if (gps_raw.fix_type != MAVLINK_APP_Data.PrevFixType)
+            {
+                CFE_EVS_SendEvent(MAVLINK_APP_GPS_FIX_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                  "GPS fix %u->%u sats=%u px4_time = %lu:%02lu:%02lu.%03lu",
+                                  (unsigned)MAVLINK_APP_Data.PrevFixType, (unsigned)gps_raw.fix_type,
+                                  (unsigned)gps_raw.satellites_visible,
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                                  (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                                  (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+ 
+                /* publish before PrevFixType is overwritten: Arg16 carries the old value */
+                MAVLINK_APP_PublishTimeline(TL_GPS_FIX, gps_raw.fix_type,
+                                            MAVLINK_APP_Data.PrevFixType,
+                                            gps_raw.satellites_visible);
+                MAVLINK_APP_Data.PrevFixType = gps_raw.fix_type;
+            }
+            MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
+ 
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_SYS_STATUS:
+        {
+            mavlink_sys_status_t sys_status;
+            mavlink_msg_sys_status_decode(msg, &sys_status);
+ 
+            MAVLINK_APP_Data.HkTlm.Payload.BatteryRemaining = sys_status.battery_remaining;
+            MAVLINK_APP_Data.HkTlm.Payload.BatteryVoltage = sys_status.voltage_battery / 1000.0f; /* mV to V */
+            MAVLINK_APP_Data.HkTlm.Payload.BatteryCurrent = sys_status.current_battery / 100.0f;  /* cA to A */
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_STATUSTEXT:
+        {
+            mavlink_statustext_t statustext;
+            mavlink_msg_statustext_decode(msg, &statustext);
+ 
+            MAVLINK_APP_Data.Px4StatusText.Severity = statustext.severity;
+            
+ 
+            memcpy(MAVLINK_APP_Data.Px4StatusText.Text, statustext.text, 50);
+ 
+            MAVLINK_APP_Data.Px4StatusText.Text[49] = '\0';
+ 
+            MAVLINK_APP_Data.Px4StatusText.TextLen = strlen(MAVLINK_APP_Data.Px4StatusText.Text);
+            CFE_EVS_SendEvent(
+                MAVLINK_APP_PX4_STATUSTEXT_EID,
+                CFE_EVS_EventType_INFORMATION,
+                "PX4 STATUSTEXT: severity=%u text=[%s] px4_time = %lu:%02lu:%02lu.%03lu",
+                (unsigned int)MAVLINK_APP_Data.Px4StatusText.Severity, MAVLINK_APP_Data.Px4StatusText.Text,
+                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
+                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
+                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
+                (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+ 
+            MAVLINK_APP_PublishTimeline(TL_STATUSTEXT, statustext.severity, 0, 0);
+ 
+            break;
+        }
+ 
+        case MAVLINK_MSG_ID_COMMAND_ACK:
+        {
+            mavlink_command_ack_t command_ack;
+            mavlink_msg_command_ack_decode(msg, &command_ack);
+ 
+            if (command_ack.command == MAV_CMD_INJECT_FAILURE || command_ack.command == MAV_CMD_MISSION_START)
+            {
+                CFE_EVS_SendEvent(MAVLINK_APP_CMD_ACK_INF_EID, CFE_EVS_EventType_INFORMATION,
+                  "ACK cmd=%u result=%u px4_time = %lu:%02lu:%02lu.%03lu",
+                  (unsigned)command_ack.command, (unsigned)command_ack.result,
+                (unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u * 60u),
+                ((unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u)) % 60u,
+                ((unsigned long)MAVLINK_APP_Data.PX4BootMs / 1000u) % 60u,
+                (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
+                MAVLINK_APP_PublishTimeline(TL_CMD_ACK, (uint8)command_ack.result,
+                                            (uint16)command_ack.command, 0);
+            }
+            break;
+        }
+ 
+        default:
+            break;
+    }
+}
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                            */
 /* UDP receive and MAVLink parse task                                         */
@@ -129,11 +358,11 @@ static void MAVLINK_APP_Rx(void)
     int32             i;
     mavlink_message_t msg;
     mavlink_status_t  status;
-
+ 
     memset(&status, 0, sizeof(status));
-
+ 
     OS_printf("[MAVLINK_APP] RX task started\n");
-
+ 
     while (MAVLINK_APP_Data.RunStatus == CFE_ES_RunStatus_APP_RUN)
     {
         n = OS_SocketRecvFrom(MAVLINK_APP_Data.SockId, input_buffer,
@@ -142,10 +371,10 @@ static void MAVLINK_APP_Rx(void)
         {
             continue; /* timeout or error: re-check RunStatus */
         }
-
+ 
         MAVLINK_APP_Data.RxPacketCount++;
         MAVLINK_APP_Data.RxByteCount += (uint32)n;
-
+ 
         /* A datagram can hold more than one message, so feed every byte */
         for (i = 0; i < n; i++)
         {
@@ -153,230 +382,11 @@ static void MAVLINK_APP_Rx(void)
             {
                 continue; /* message not complete yet */
             }
-
+ 
             MAVLINK_APP_Data.ParseState.MsgCount++;
-
-            switch (msg.msgid)
-            {
-                case MAVLINK_MSG_ID_HEARTBEAT:
-                {
-                    mavlink_heartbeat_t heartbeat;
-                    mavlink_msg_heartbeat_decode(&msg, &heartbeat);
-                    
-
-
-                    /* Only accept the flight controller's heartbeat */
-                    if (msg.sysid != 1 ||
-                        msg.compid != MAV_COMP_ID_AUTOPILOT1 ||
-                        heartbeat.autopilot != MAV_AUTOPILOT_PX4)
-                    {
-                        break;
-                    }
-
-                    MAVLINK_APP_Data.ParseState.HeartbeatCount++;
-                    MAVLINK_APP_Data.ParseState.Armed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) ? 1 : 0;
-                    MAVLINK_APP_Data.ParseState.MainMode = (heartbeat.custom_mode >> 16) & 0xFF;
-                    MAVLINK_APP_Data.ParseState.SubMode = (heartbeat.custom_mode >> 24) & 0xFF;
-                    MAVLINK_APP_Data.ParseState.SystemStatus = heartbeat.system_status;
-
-                    if (heartbeat.custom_mode != MAVLINK_APP_Data.PrevCustomMode)
-                    {
-                    CFE_EVS_SendEvent(MAVLINK_APP_MODE_CHG_INF_EID, CFE_EVS_EventType_INFORMATION,
-                      "MODE 0x%08lX->0x%08lX main=%u sub=%u px4_time = %lu:%02lu:%02lu.%03lu",
-                      (unsigned long)MAVLINK_APP_Data.PrevCustomMode,
-                      (unsigned long)heartbeat.custom_mode,
-                      (unsigned)MAVLINK_APP_Data.ParseState.MainMode,
-                      (unsigned)MAVLINK_APP_Data.ParseState.SubMode,
-                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
-                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
-                      (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
-                      (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-
-                        MAVLINK_APP_PublishTimeline(TL_MODE_CHANGE,
-                                                    MAVLINK_APP_Data.ParseState.MainMode,
-                                                    MAVLINK_APP_Data.ParseState.SubMode,
-                                                    heartbeat.custom_mode);
-                        MAVLINK_APP_Data.PrevCustomMode = heartbeat.custom_mode;
-                    }
-
-                    if (MAVLINK_APP_Data.LastGpsFixMs != 0 && !MAVLINK_APP_Data.GpsStale &&
-                        (MAVLINK_APP_Data.PX4BootMs - MAVLINK_APP_Data.LastGpsFixMs) > 2000)
-                        {
-                            MAVLINK_APP_Data.GpsStale = 1;
-                            CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                "GPS_RAW_INT stale >2s px4_time = %lu:%02lu:%02lu.%03lu",
-                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
-                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
-                                (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
-                                (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-                            MAVLINK_APP_PublishTimeline(TL_GPS_STALE, 0, 0, 0);
-                        }
-
-                    MAVLINK_APP_Data.HkTlm.Payload.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
-
-                    MAVLINK_APP_Data.HkTlm.Payload.Armed = MAVLINK_APP_Data.ParseState.Armed;
-                    MAVLINK_APP_Data.HkTlm.Payload.MainMode = MAVLINK_APP_Data.ParseState.MainMode;
-                    MAVLINK_APP_Data.HkTlm.Payload.SubMode = MAVLINK_APP_Data.ParseState.SubMode;
-                    MAVLINK_APP_Data.HkTlm.Payload.HeartbeatCount = MAVLINK_APP_Data.ParseState.HeartbeatCount;
-                    
-                    CFE_SB_TimeStampMsg(CFE_MSG_PTR(MAVLINK_APP_Data.HkTlm.TelemetryHeader));
-                    CFE_SB_TransmitMsg(CFE_MSG_PTR(MAVLINK_APP_Data.HkTlm.TelemetryHeader), true);
-
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_ATTITUDE:
-                {
-                    mavlink_attitude_t attitude;
-                    mavlink_msg_attitude_decode(&msg, &attitude);
-
-                    MAVLINK_APP_Data.NavTlm.Payload.RollRad = attitude.roll;
-                    MAVLINK_APP_Data.NavTlm.Payload.PitchRad = attitude.pitch;
-                    MAVLINK_APP_Data.NavTlm.Payload.YawRad = attitude.yaw;  
-                    MAVLINK_APP_Data.NavTlm.Payload.RollRateRadPs = attitude.rollspeed;
-                    MAVLINK_APP_Data.NavTlm.Payload.PitchRateRadPs = attitude.pitchspeed;
-                    MAVLINK_APP_Data.NavTlm.Payload.YawRateRadPs = attitude.yawspeed;
-                    MAVLINK_APP_Data.PX4BootMs = attitude.time_boot_ms;
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-                {
-                    mavlink_global_position_int_t global_position;
-                    mavlink_msg_global_position_int_decode(&msg, &global_position);
-
-                    MAVLINK_APP_Data.NavTlm.Payload.LatDegE7 = global_position.lat;
-                    MAVLINK_APP_Data.NavTlm.Payload.LonDegE7 = global_position.lon;
-                    MAVLINK_APP_Data.NavTlm.Payload.RelativeAltitude = global_position.relative_alt;
-                    MAVLINK_APP_Data.NavTlm.Payload.VxCms = global_position.vx;
-                    MAVLINK_APP_Data.NavTlm.Payload.VyCms = global_position.vy;
-                    MAVLINK_APP_Data.NavTlm.Payload.VzCms = global_position.vz;
-                    MAVLINK_APP_Data.NavTlm.Payload.HeadingCDeg = global_position.hdg;
-                    
-                    MAVLINK_APP_Data.PX4BootMs = global_position.time_boot_ms;
-                    /* Only post SB messages at 5Hz instead of 50Hz*/
-                    static uint8 NavCounter = 0;
-
-                    NavCounter++;
-
-                    if (NavCounter >= 10)
-                    {
-                        NavCounter = 0;
-                        MAVLINK_APP_Data.NavTlm.Payload.PX4BootMs = MAVLINK_APP_Data.PX4BootMs;
-                        CFE_SB_TimeStampMsg(CFE_MSG_PTR(MAVLINK_APP_Data.NavTlm.TelemetryHeader));
-                        CFE_SB_TransmitMsg(CFE_MSG_PTR(MAVLINK_APP_Data.NavTlm.TelemetryHeader), true);
-                    }
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_GPS_RAW_INT:
-                {
-                    mavlink_gps_raw_int_t gps_raw;
-                    mavlink_msg_gps_raw_int_decode(&msg, &gps_raw);
-
-                    MAVLINK_APP_Data.HkTlm.Payload.GpsFixType = gps_raw.fix_type;
-                    MAVLINK_APP_Data.HkTlm.Payload.GpsNumSatellites = gps_raw.satellites_visible;
-
-                    MAVLINK_APP_Data.LastGpsFixMs = MAVLINK_APP_Data.PX4BootMs;
-
-                    if (MAVLINK_APP_Data.GpsStale)
-                    {
-                        MAVLINK_APP_Data.GpsStale = 0;
-                        CFE_EVS_SendEvent(MAVLINK_APP_GPS_STALE_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                          "GPS_RAW_INT resumed px4_time = %lu:%02lu:%02lu.%03lu",
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
-                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-                        MAVLINK_APP_PublishTimeline(TL_GPS_RESUME, 0, 0, 0);
-                    }
-
-                    if (gps_raw.fix_type != MAVLINK_APP_Data.PrevFixType)
-                    {
-                        CFE_EVS_SendEvent(MAVLINK_APP_GPS_FIX_INF_EID, CFE_EVS_EventType_INFORMATION,
-                                          "GPS fix %u->%u sats=%u px4_time = %lu:%02lu:%02lu.%03lu",
-                                          (unsigned)MAVLINK_APP_Data.PrevFixType, (unsigned)gps_raw.fix_type,
-                                          (unsigned)gps_raw.satellites_visible,
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
-                                          (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
-                                          (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-
-                        /* publish before PrevFixType is overwritten: Arg16 carries the old value */
-                        MAVLINK_APP_PublishTimeline(TL_GPS_FIX, gps_raw.fix_type,
-                                                    MAVLINK_APP_Data.PrevFixType,
-                                                    gps_raw.satellites_visible);
-                        MAVLINK_APP_Data.PrevFixType = gps_raw.fix_type;
-                    }
-                    MAVLINK_APP_Data.PrevSats = gps_raw.satellites_visible;
-
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_SYS_STATUS:
-                {
-                    mavlink_sys_status_t sys_status;
-                    mavlink_msg_sys_status_decode(&msg, &sys_status);
-
-                    MAVLINK_APP_Data.HkTlm.Payload.BatteryRemaining = sys_status.battery_remaining;
-                    MAVLINK_APP_Data.HkTlm.Payload.BatteryVoltage = sys_status.voltage_battery / 1000.0f; /* mV to V */
-                    MAVLINK_APP_Data.HkTlm.Payload.BatteryCurrent = sys_status.current_battery / 100.0f;  /* cA to A */
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_STATUSTEXT:
-                {
-                    mavlink_statustext_t statustext;
-                    mavlink_msg_statustext_decode(&msg, &statustext);
-
-                    MAVLINK_APP_Data.Px4StatusText.Severity = statustext.severity;
-                    
-
-                    memcpy(MAVLINK_APP_Data.Px4StatusText.Text, statustext.text, 50);
-
-                    MAVLINK_APP_Data.Px4StatusText.Text[49] = '\0';
-
-                    MAVLINK_APP_Data.Px4StatusText.TextLen = strlen(MAVLINK_APP_Data.Px4StatusText.Text);
-                    CFE_EVS_SendEvent(
-                        MAVLINK_APP_PX4_STATUSTEXT_EID,
-                        CFE_EVS_EventType_INFORMATION,
-                        "PX4 STATUSTEXT: severity=%u text=[%s] px4_time = %lu:%02lu:%02lu.%03lu",
-                        (unsigned int)MAVLINK_APP_Data.Px4StatusText.Severity, MAVLINK_APP_Data.Px4StatusText.Text,
-                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u * 60u))),
-                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / (1000u * 60u)) % 60u),
-                        (((((unsigned long)MAVLINK_APP_Data.PX4BootMs)) / 1000u) % 60u),
-                        (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-
-                    MAVLINK_APP_PublishTimeline(TL_STATUSTEXT, statustext.severity, 0, 0);
-
-                    break;
-                }
-
-                case MAVLINK_MSG_ID_COMMAND_ACK:
-                {
-                    mavlink_command_ack_t command_ack;
-                    mavlink_msg_command_ack_decode(&msg, &command_ack);
-
-                    if (command_ack.command == MAV_CMD_INJECT_FAILURE || command_ack.command == MAV_CMD_MISSION_START)
-                    {
-                        CFE_EVS_SendEvent(MAVLINK_APP_CMD_ACK_INF_EID, CFE_EVS_EventType_INFORMATION,
-                          "ACK cmd=%u result=%u px4_time = %lu:%02lu:%02lu.%03lu",
-                          (unsigned)command_ack.command, (unsigned)command_ack.result,
-                        (unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u * 60u),
-                        ((unsigned long)MAVLINK_APP_Data.PX4BootMs / (1000u * 60u)) % 60u,
-                        ((unsigned long)MAVLINK_APP_Data.PX4BootMs / 1000u) % 60u,
-                        (unsigned long)MAVLINK_APP_Data.PX4BootMs % 1000u);
-                        MAVLINK_APP_PublishTimeline(TL_CMD_ACK, (uint8)command_ack.result,
-                                                    (uint16)command_ack.command, 0);
-                    }
-                    break;
-                }
-
-                default:
-                    break;
-            }
+            MAVLINK_APP_HandleMavlinkMsg(&msg);
         }
-
+ 
         MAVLINK_APP_Data.ParseState.ParseDrops = status.packet_rx_drop_count;
     }
 }
@@ -453,25 +463,6 @@ CFE_Status_t MAVLINK_APP_Init(void)
              CFE_SB_ValueToMsgId(MAVLINK_APP_NAV_TLM_MID),
              sizeof(MAVLINK_APP_Data.NavTlm));
         
-        
-        CFE_SB_MsgId_t HkMsgId;
-CFE_SB_MsgId_t NavMsgId;
-
-CFE_MSG_GetMsgId(
-    CFE_MSG_PTR(MAVLINK_APP_Data.HkTlm.TelemetryHeader),
-    &HkMsgId);
-
-CFE_MSG_GetMsgId(
-    CFE_MSG_PTR(MAVLINK_APP_Data.NavTlm.TelemetryHeader),
-    &NavMsgId);
-
-CFE_EVS_SendEvent(
-    MAVLINK_APP_INIT_INF_EID,
-    CFE_EVS_EventType_INFORMATION,
-    "MIDs: HK=0x%04X NAV=0x%04X",
-    CFE_SB_MsgIdToValue(HkMsgId),
-    CFE_SB_MsgIdToValue(NavMsgId));
-
         /*
          ** Create Software Bus message pipe.
          */

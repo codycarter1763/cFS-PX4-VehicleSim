@@ -150,6 +150,7 @@ typedef struct
     uint32 PX4BootMs;   /* latest time_boot_ms seen from PX4 */
     uint32 LastGpsFixMs; /* time of last GPS fix, in PX4 time_boot_ms */
     uint8 GpsStale;  /* true if GPS has not been updated for a while */
+    uint8 NavCounter;
     uint8  PrevFixType;     /* 255 until the first GPS_RAW_INT */
     uint8  PrevSats;        /* 255 until the first GPS_RAW_INT */
     uint32 PrevCustomMode;  /* 0xFFFFFFFF until the first HEARTBEAT */
@@ -169,5 +170,8 @@ extern MAVLINK_APP_Data_t MAVLINK_APP_Data;
 */
 void         MAVLINK_APP_Main(void);
 CFE_Status_t MAVLINK_APP_Init(void);
+
+struct __mavlink_message;
+void MAVLINK_APP_HandleMavlinkMsg(const struct __mavlink_message *msg);
 
 #endif /* MAVLINK_APP_H */

@@ -290,6 +290,57 @@ void Test_MAVLINK_APP_InjectGPSFaultCmd(void)
         UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
     }
 
+void Test_MAVLINK_APP_RestoreGPSFailureCmd(void)
+{
+    UT_CheckEvent_t EventTest;
+    mavlink_command_long_t Cmd;
+    MAVLINK_APP_RestoreGPSFailureCmd_t Msg;
+    mavlink_message_t MavMsg;
+    mavlink_status_t MavStatus;
+    bool Decoded = false;
+    size_t i;
+
+    memset(&MAVLINK_APP_Data, 0, sizeof(MAVLINK_APP_Data)); 
+    memset(&Cmd, 0, sizeof(Cmd));
+    memset(&Msg, 0, sizeof(Msg));
+    memset(&MavStatus, 0, sizeof(MavStatus));
+    UT_SentLen = 0;
+
+    /* Nomimnal: Correct InjectGPSFault Command */
+    UT_CHECKEVENT_SETUP(&EventTest, MAVLINK_APP_RESTORE_GPS_FAILURE_INF_EID, NULL);
+    UT_SetHandlerFunction(UT_KEY(OS_SocketSendTo), UT_CaptureSendTo, NULL);
+
+    UtAssert_INT32_EQ(MAVLINK_APP_RestoreGPSFailureCmd(&Msg), CFE_SUCCESS);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandCounter, 1);
+    UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandErrorCounter, 0);
+    UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
+    UtAssert_STUB_COUNT(OS_SocketSendTo, 1);
+
+    for (i = 0; i < UT_SentLen; i++) {
+        if (mavlink_parse_char(MAVLINK_COMM_1, UT_SentBuf[i], &MavMsg, &MavStatus) && MavMsg.msgid == MAVLINK_MSG_ID_COMMAND_LONG) {
+            mavlink_msg_command_long_decode(&MavMsg, &Cmd);
+            Decoded = true;
+            break;
+        }
+    }
+        UtAssert_True(Decoded, "Sent bytes decoded as MAVLink COMMAND_LONG");
+        UtAssert_UINT16_EQ(Cmd.command, MAV_CMD_INJECT_FAILURE);
+        UtAssert_UINT8_EQ(Cmd.target_system, 1);
+        UtAssert_UINT8_EQ(Cmd.target_component, 1);
+        UtAssert_True(Cmd.param1 == 4.0f, "param1 is FAIILURE_UNIT_SENSOR_GPS (4), got %f", (double)Cmd.param1);
+        UtAssert_True(Cmd.param2 == 0.0f, "param2 is FAILURE_TYPE_OK (0), got %f", (double)Cmd.param2);
+
+        /* Error: socket send fails */
+        UT_CHECKEVENT_SETUP(&EventTest, MAVLINK_APP_RESTORE_GPS_FAILURE_ERR_EID, NULL);
+        UT_SetDeferredRetcode(UT_KEY(OS_SocketSendTo), 1, OS_ERROR);
+
+        UtAssert_INT32_EQ(MAVLINK_APP_RestoreGPSFailureCmd(&Msg), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+        UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandCounter, 1);
+        UtAssert_UINT8_EQ(MAVLINK_APP_Data.CommandErrorCounter, 1);
+        UtAssert_UINT32_EQ(EventTest.MatchCount, 1);
+}
+
+
 
 /*
  * Register the test cases to execute with the unit test tool
@@ -303,4 +354,5 @@ void UtTest_Setup(void)
     ADD_TEST(MAVLINK_APP_DisplayParamCmd);
     ADD_TEST(MAVLINK_APP_StartMissionCmd);
     ADD_TEST(MAVLINK_APP_InjectGPSFaultCmd);
+    ADD_TEST(MAVLINK_APP_RestoreGPSFailureCmd);
 }
